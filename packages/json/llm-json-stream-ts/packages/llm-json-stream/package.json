@@ -1,0 +1,61 @@
+{
+  "name": "llm-json-stream",
+  "version": "0.1.0",
+  "description": "Cross-platform streaming JSON parser for TypeScript optimized for LLM responses. Works on Node.js, Deno, Bun, browsers, and edge runtimes.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "test": "bun test",
+    "test:jest": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:watch": "bun test --watch"
+  },
+  "keywords": [
+    "json",
+    "streaming",
+    "parser",
+    "llm",
+    "ai",
+    "reactive",
+    "async-iterable",
+    "cross-platform",
+    "deno",
+    "bun",
+    "nodejs",
+    "browser",
+    "edge-runtime"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ComsIndeed/llm-json-stream-typescript.git"
+  },
+  "homepage": "https://github.com/ComsIndeed/llm-json-stream-typescript#readme",
+  "bugs": {
+    "url": "https://github.com/ComsIndeed/llm-json-stream-typescript/issues"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": false,
+  "author": "Vincent Sanicolas (ComsIndeed)",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/node": "^22.10.1",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}

@@ -1,0 +1,23 @@
+name: llm_json_stream
+description: A streaming JSON parser optimized for LLM responses. Parse JSON reactively as it streams in, with path-based subscriptions and type-safe property access.
+version: 0.4.7
+repository: https://github.com/ComsIndeed/llm-json-stream-dart
+homepage: https://github.com/ComsIndeed/llm-json-stream-dart
+issue_tracker: https://github.com/ComsIndeed/llm-json-stream-dart/issues
+
+topics:
+  - json
+  - streaming
+  - parser
+  - llm
+  - reactive
+
+environment:
+  sdk: ^3.0.0
+
+dependencies:
+  meta: ^1.16.0
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.6
