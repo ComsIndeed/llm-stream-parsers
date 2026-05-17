@@ -74,6 +74,8 @@
     - `ts-node: ^10.9.2` (TypeScript execution for development)
     - `@types/jest: ^29.5.12` (Jest type definitions) Python
 
+### Python
+
 ### C#
 
 ### Kotlin
