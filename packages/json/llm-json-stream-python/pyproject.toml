@@ -1,0 +1,28 @@
+[project]
+name = "llm-json-stream"
+version = "0.1.0"
+description = "A native Python library for parsing JSON streams with support for early value retrieval."
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "mypy",
+    "ruff"
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py38"
+
+[tool.mypy]
+strict = true
+ignore_missing_imports = true
