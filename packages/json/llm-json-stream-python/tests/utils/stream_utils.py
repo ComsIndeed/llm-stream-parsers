@@ -4,6 +4,26 @@ import asyncio
 from typing import AsyncIterator
 
 
+class AsyncStreamController:
+    """Queue-backed async stream for manual chunk control."""
+
+    def __init__(self) -> None:
+        self._queue: asyncio.Queue[str | None] = asyncio.Queue()
+
+    async def add(self, chunk: str) -> None:
+        await self._queue.put(chunk)
+
+    async def close(self) -> None:
+        await self._queue.put(None)
+
+    async def stream(self) -> AsyncIterator[str]:
+        while True:
+            item = await self._queue.get()
+            if item is None:
+                break
+            yield item
+
+
 async def stream_text_in_chunks(
     text: str,
     chunk_size: int = 10,
