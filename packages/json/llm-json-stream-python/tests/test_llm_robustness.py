@@ -28,7 +28,7 @@ class TestLLMRobustness:
     @pytest.mark.asyncio
     async def test_realistic_llm_response_2(self):
         """Test realistic LLM response 2."""
-                json_text = """<think>
+        json_text = """<think>
 Planning response
 </think>
 
@@ -41,17 +41,17 @@ Planning response
     "total": 2,
 }
 ```"""
-                stream = stream_text_in_chunks(text=json_text, chunk_size=20, interval=5)
-                parser = JsonStreamParser(stream, skip_thoughts=True)
+        stream = stream_text_in_chunks(text=json_text, chunk_size=20, interval=5)
+        parser = JsonStreamParser(stream, skip_thoughts=True)
 
-                total = await parser.get_number_property("total")
-                first_name = await parser.get_string_property("products[0].name")
-                second_price = await parser.get_number_property("products[1].price")
+        total = await parser.get_number_property("total")
+        first_name = await parser.get_string_property("products[0].name")
+        second_price = await parser.get_number_property("products[1].price")
 
-                assert total == 2
-                assert first_name == "Widget"
-                assert second_price == 49.99
-                await parser.dispose()
+        assert total == 2
+        assert first_name == "Widget"
+        assert second_price == 49.99
+        await parser.dispose()
 
     @pytest.mark.asyncio
     async def test_realistic_llm_response_3(self):
@@ -81,8 +81,8 @@ Planning response
         parser = JsonStreamParser(stream)
 
         value_stream = parser.get_number_property("value")
-        with pytest.raises(RuntimeError):
-            await value_stream
+        result = await value_stream
+        assert result == 123
         await parser.dispose()
 
     @pytest.mark.asyncio

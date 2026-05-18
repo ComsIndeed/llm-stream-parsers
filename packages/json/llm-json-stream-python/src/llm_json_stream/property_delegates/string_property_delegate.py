@@ -5,8 +5,19 @@ from __future__ import annotations
 from ..property_delegate import PropertyDelegate
 
 
+from typing import Callable, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..json_stream_parser import JsonStreamParserController
+
+
 class StringPropertyDelegate(PropertyDelegate):
-    def __init__(self, property_path: str, parser_controller, on_complete=None) -> None:
+    def __init__(
+        self,
+        property_path: str,
+        parser_controller: JsonStreamParserController,
+        on_complete: Optional[Callable[[], None]] = None,
+    ) -> None:
         super().__init__(property_path, parser_controller, on_complete)
         self._buffer = ""
         self._is_escaping = False

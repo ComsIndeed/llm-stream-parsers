@@ -427,6 +427,7 @@ class JsonStreamParser(PropertyGetterMixin):
                     data=exc,
                 )
             )
+            raise
 
     def _handle_stream_end(self) -> None:
         for controller in self._property_controllers.values():

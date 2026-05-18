@@ -99,5 +99,5 @@ class TestComprehensiveValueRetrieval:
         active_stream = parser.get_boolean_property("active")
 
         results = await asyncio.gather(name_stream, age_stream, active_stream)
-        assert results == ["Alice", 30, True]
+        assert list(results) == ["Alice", 30, True]
         await parser.dispose()

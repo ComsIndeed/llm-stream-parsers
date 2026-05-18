@@ -1,7 +1,7 @@
 """Observability tests."""
 
 import pytest
-from llm_json_stream import JsonStreamParser, ParseEventType
+from llm_json_stream import JsonStreamParser, ParseEventType, ParseEvent
 from tests.utils.stream_utils import stream_text_in_chunks
 
 
@@ -11,7 +11,7 @@ class TestObservability:
     @pytest.mark.asyncio
     async def test_stream_events_firing(self):
         """Test that stream events fire correctly."""
-        events = []
+        events: list[ParseEvent] = []
         json_text = '{"name": "test"}'
         stream = stream_text_in_chunks(text=json_text, chunk_size=5, interval=5)
         parser = JsonStreamParser(stream, on_log=events.append)
@@ -25,7 +25,7 @@ class TestObservability:
     @pytest.mark.asyncio
     async def test_chunk_emission_tracking(self):
         """Test chunk emission tracking."""
-        events = []
+        events: list[ParseEvent] = []
         json_text = '{"text": "Hello World"}'
         stream = stream_text_in_chunks(text=json_text, chunk_size=8, interval=5)
         parser = JsonStreamParser(stream, on_log=events.append)
@@ -42,7 +42,7 @@ class TestObservability:
     @pytest.mark.asyncio
     async def test_completion_events(self):
         """Test completion events."""
-        events = []
+        events: list[ParseEvent] = []
         json_text = '{"value": 1}'
         stream = stream_text_in_chunks(text=json_text, chunk_size=4, interval=5)
         parser = JsonStreamParser(stream, on_log=events.append)
@@ -56,7 +56,7 @@ class TestObservability:
     @pytest.mark.asyncio
     async def test_error_events(self):
         """Test error events."""
-        events = []
+        events: list[ParseEvent] = []
         json_text = '{"value": "oops"}'
         stream = stream_text_in_chunks(text=json_text, chunk_size=4, interval=5)
         parser = JsonStreamParser(stream, on_log=events.append)
@@ -71,10 +71,10 @@ class TestObservability:
     @pytest.mark.asyncio
     async def test_multiple_listeners(self):
         """Test multiple listeners on same stream."""
-        events_a = []
-        events_b = []
+        events_a: list[ParseEvent] = []
+        events_b: list[ParseEvent] = []
 
-        def log_event(event):
+        def log_event(event: ParseEvent) -> None:
             events_a.append(event)
             events_b.append(event)
 
@@ -91,12 +91,12 @@ class TestObservability:
     @pytest.mark.asyncio
     async def test_event_ordering(self):
         """Test event ordering."""
-        events = []
+        events: list[ParseEvent] = []
         json_text = '{"name": "Alice"}'
         stream = stream_text_in_chunks(text=json_text, chunk_size=4, interval=5)
         parser = JsonStreamParser(stream, on_log=events.append)
 
-        await parser.get_string_property("name")
+        await parser.get_map_property("")
         await parser.dispose()
 
         root_start_index = next(

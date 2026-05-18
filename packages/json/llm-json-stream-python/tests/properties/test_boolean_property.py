@@ -127,6 +127,6 @@ class TestBooleanProperty:
         parser = JsonStreamParser(stream)
 
         flag_stream = parser.get_boolean_property("flag")
-        with pytest.raises(asyncio.TimeoutError):
-            await asyncio.wait_for(flag_stream, timeout=0.3)
+        with pytest.raises(RuntimeError):
+            await flag_stream
         await parser.dispose()

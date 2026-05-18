@@ -124,7 +124,7 @@ class TestCriticalBug:
             timeout=5,
         )
 
-        assert results == ["1", "2", "3", "4", "5"]
+        assert list(results) == ["1", "2", "3", "4", "5"]
         await parser.dispose()
 
     @pytest.mark.asyncio

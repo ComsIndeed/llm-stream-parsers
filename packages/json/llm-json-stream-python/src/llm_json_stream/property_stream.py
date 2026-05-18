@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any, AsyncIterator, Awaitable, Callable, Generic, List, Optional, Protocol, TypeVar
+import builtins
+from typing import Any, AsyncIterator, Callable, Generic, List, Protocol, TypeVar
 
 if False:  # pragma: no cover - for typing only
-    from .json_stream_parser import JsonStreamParserController
+    pass
 
 
 T = TypeVar("T")
@@ -44,7 +45,7 @@ class PropertyStream(Generic[T]):
     def property_path(self) -> str:
         return self._property_path
 
-    def __await__(self):  # type: ignore[override]
+    def __await__(self) -> Any:
         return self._future.__await__()
 
     def __aiter__(self) -> AsyncIterator[T]:
@@ -172,19 +173,19 @@ class PropertyGetterMixin:
     def str(self, key: str) -> StringPropertyStream:
         return self.get_string_property(key)
 
-    def number(self, key: str) -> NumberPropertyStream:
+    def number(self, key: builtins.str) -> NumberPropertyStream:
         return self.get_number_property(key)
 
-    def boolean(self, key: str) -> BooleanPropertyStream:
+    def boolean(self, key: builtins.str) -> BooleanPropertyStream:
         return self.get_boolean_property(key)
 
-    def nil(self, key: str) -> NullPropertyStream:
+    def nil(self, key: builtins.str) -> NullPropertyStream:
         return self.get_null_property(key)
 
-    def map(self, key: str) -> "MapPropertyStream":
+    def map(self, key: builtins.str) -> "MapPropertyStream":
         return self.get_map_property(key)
 
-    def list(self, key: str) -> "ListPropertyStream":
+    def list(self, key: builtins.str) -> "ListPropertyStream":
         return self.get_list_property(key)
 
 

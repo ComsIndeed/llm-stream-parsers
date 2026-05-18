@@ -5,8 +5,19 @@ from __future__ import annotations
 from ..property_delegate import PropertyDelegate
 
 
+from typing import Callable, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..json_stream_parser import JsonStreamParserController
+
+
 class BooleanPropertyDelegate(PropertyDelegate):
-    def __init__(self, property_path: str, parser_controller, on_complete=None) -> None:
+    def __init__(
+        self,
+        property_path: str,
+        parser_controller: JsonStreamParserController,
+        on_complete: Optional[Callable[[], None]] = None,
+    ) -> None:
         super().__init__(property_path, parser_controller, on_complete)
         self._buffer = ""
         self._expected_value: bool | None = None
@@ -14,12 +25,17 @@ class BooleanPropertyDelegate(PropertyDelegate):
     def add_character(self, character: str) -> None:
         if character in {",", "}", "]"}:
             if not self._is_done and self._expected_value is not None:
-                self._is_done = True
-                self._parser_controller.complete_property(
-                    self._property_path, self._expected_value
+                is_valid = (
+                    (self._expected_value is True and "true".startswith(self._buffer))
+                    or (self._expected_value is False and "false".startswith(self._buffer))
                 )
-                if self._on_complete:
-                    self._on_complete()
+                if is_valid:
+                    self._is_done = True
+                    self._parser_controller.complete_property(
+                        self._property_path, self._expected_value
+                    )
+                    if self._on_complete:
+                        self._on_complete()
             return
 
         if not self._buffer:

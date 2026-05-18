@@ -1,7 +1,7 @@
 """Stream completion tests."""
 
 import pytest
-from llm_json_stream import JsonStreamParser, ParseEventType
+from llm_json_stream import JsonStreamParser, ParseEventType, ParseEvent
 from tests.utils.stream_utils import stream_text_in_chunks
 
 
@@ -33,7 +33,7 @@ class TestStreamCompletion:
     @pytest.mark.asyncio
     async def test_completion_events_fire(self):
         """Test completion events fire."""
-        events = []
+        events: list[ParseEvent] = []
         json_text = '{"value":true}'
         stream = stream_text_in_chunks(text=json_text, chunk_size=5, interval=1)
         parser = JsonStreamParser(stream, on_log=events.append)
@@ -76,7 +76,7 @@ class TestStreamCompletion:
     @pytest.mark.asyncio
     async def test_early_termination(self):
         """Test early stream termination."""
-        json_text = '{"value": "test"'
+        json_text = '{"value": "test'
         stream = stream_text_in_chunks(text=json_text, chunk_size=5, interval=1)
         parser = JsonStreamParser(stream)
 

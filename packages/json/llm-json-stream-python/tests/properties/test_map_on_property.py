@@ -26,9 +26,13 @@ class TestMapOnProperty:
 
         map_stream = parser.get_map_property("")
         discovered = []
-        types = {}
+        types: dict[str, type] = {}
 
-        map_stream.on_property(lambda prop, key: (discovered.append(key), types.setdefault(key, type(prop))))
+        def on_property(prop, key):
+            discovered.append(key)
+            types.setdefault(key, type(prop))
+
+        map_stream.on_property(on_property)
 
         result = await map_stream
 
@@ -152,9 +156,9 @@ class TestMapOnProperty:
         parser = JsonStreamParser(stream)
 
         map_stream = parser.get_map_property("")
-        types = {}
+        types: dict[str, type] = {}
 
-        map_stream.on_property(lambda prop, key: types.setdefault(key, type(prop)))
+        map_stream.on_property(lambda prop, key: types.update({key: type(prop)}))
 
         result = await map_stream
         assert result == {"items": [1, 2, 3], "names": ["a", "b"]}
@@ -170,9 +174,9 @@ class TestMapOnProperty:
         parser = JsonStreamParser(stream)
 
         map_stream = parser.get_map_property("")
-        types = {}
+        types: dict[str, type] = {}
 
-        map_stream.on_property(lambda prop, key: types.setdefault(key, type(prop)))
+        map_stream.on_property(lambda prop, key: types.update({key: type(prop)}))
 
         result = await map_stream
         assert result == {"user": {"name": "Alice"}}

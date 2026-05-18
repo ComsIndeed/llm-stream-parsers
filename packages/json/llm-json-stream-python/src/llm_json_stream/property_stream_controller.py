@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any, Generic, List, Optional, TypeVar, TYPE_CHECKING
+from typing import Any, Generic, Optional, TypeVar, TYPE_CHECKING
 
 from .property_stream import (
     BooleanPropertyStream,
@@ -33,6 +33,15 @@ class PropertyStreamController(Generic[T]):
         self._property_path = property_path
         loop = asyncio.get_event_loop()
         self._future: asyncio.Future[T] = loop.create_future()
+
+        def _mark_exception_retrieved(f: asyncio.Future[T]) -> None:
+            try:
+                if not f.cancelled():
+                    f.exception()
+            except Exception:
+                pass
+
+        self._future.add_done_callback(_mark_exception_retrieved)
 
     @property
     def is_closed(self) -> bool:
@@ -82,7 +91,7 @@ class StringPropertyStreamController(PropertyStreamController[str]):
         self._buffer += chunk
         self.property_stream._push_value(chunk)
 
-    def complete(self, value: str | None = None) -> None:  # type: ignore[override]
+    def complete(self, value: str | None = None) -> None:
         if self._is_closed:
             return
         self._final_value = self._buffer
@@ -103,7 +112,7 @@ class NumberPropertyStreamController(PropertyStreamController[float]):
             property_path,
         )
 
-    def complete(self, value: float) -> None:  # type: ignore[override]
+    def complete(self, value: float) -> None:
         if self._is_closed:
             return
         self._final_value = value
@@ -125,7 +134,7 @@ class BooleanPropertyStreamController(PropertyStreamController[bool]):
             property_path,
         )
 
-    def complete(self, value: bool) -> None:  # type: ignore[override]
+    def complete(self, value: bool) -> None:
         if self._is_closed:
             return
         self._final_value = value
@@ -147,7 +156,7 @@ class NullPropertyStreamController(PropertyStreamController[None]):
             property_path,
         )
 
-    def complete(self, value: None) -> None:  # type: ignore[override]
+    def complete(self, value: None) -> None:
         if self._is_closed:
             return
         self._final_value = value
@@ -161,6 +170,8 @@ class NullPropertyStreamController(PropertyStreamController[None]):
 
 
 class MapPropertyStreamController(PropertyStreamController[dict[str, Any]]):
+    property_stream: MapPropertyStream
+
     def __init__(self, parser_controller: "JsonStreamParserController", property_path: str) -> None:
         super().__init__(parser_controller, property_path)
         self._current_value: dict[str, Any] = {}
@@ -185,7 +196,7 @@ class MapPropertyStreamController(PropertyStreamController[dict[str, Any]]):
         self._current_value[key] = value
         self.property_stream._push_value(dict(self._current_value))
 
-    def complete(self, value: Optional[dict[str, Any]] = None) -> None:  # type: ignore[override]
+    def complete(self, value: Optional[dict[str, Any]] = None) -> None:
         if self._is_closed:
             return
         final_value = value if value is not None else dict(self._current_value)
@@ -200,6 +211,8 @@ class MapPropertyStreamController(PropertyStreamController[dict[str, Any]]):
 
 
 class ListPropertyStreamController(PropertyStreamController[list[Any]]):
+    property_stream: ListPropertyStream
+
     def __init__(self, parser_controller: "JsonStreamParserController", property_path: str) -> None:
         super().__init__(parser_controller, property_path)
         self._current_value: list[Any] = []
@@ -224,7 +237,7 @@ class ListPropertyStreamController(PropertyStreamController[list[Any]]):
         self._current_value.append(value)
         self.property_stream._push_value(list(self._current_value))
 
-    def complete(self, value: Optional[list[Any]] = None) -> None:  # type: ignore[override]
+    def complete(self, value: Optional[list[Any]] = None) -> None:
         if self._is_closed:
             return
         final_value = value if value is not None else list(self._current_value)

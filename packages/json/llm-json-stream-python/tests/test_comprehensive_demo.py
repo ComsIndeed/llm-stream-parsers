@@ -151,7 +151,7 @@ class TestApiDemoFlutterAppScenario:
         material_stream = parser.get_string_property("details.material")
         status_stream = parser.get_string_property("status")
 
-        stream_values = {
+        stream_values: dict[str, list[str]] = {
             "name": [],
             "description": [],
             "color": [],

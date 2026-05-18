@@ -4,7 +4,6 @@ import asyncio
 
 import pytest
 from llm_json_stream import JsonStreamParser
-from tests.utils.stream_utils import stream_text_in_chunks
 
 
 class TestIncrementalUpdates:
@@ -53,6 +52,7 @@ class TestIncrementalUpdates:
 
         await queue.put('{"title":"This i')
         await queue.put('s a co')
+        await asyncio.sleep(0.01)
 
         string_stream = parser.get_string_property("title")
         emitted = []
@@ -70,7 +70,7 @@ class TestIncrementalUpdates:
 
         await collect_task
         assert "".join(emitted) == "This is a cool parser! Whatt!"
-        assert emitted[:1] == ["This is a co"]
+        assert emitted[:2] == ["This i", "s a co"]
         await parser.dispose()
 
     @pytest.mark.asyncio

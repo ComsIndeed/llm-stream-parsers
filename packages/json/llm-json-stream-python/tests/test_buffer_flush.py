@@ -274,8 +274,8 @@ class TestBufferFlushFromTypeScript:
         chunks = [chunk async for chunk in text_stream]
         final_value = await text_stream
 
-        assert "".join(chunks) == "Hello\\nWorld"
-        assert final_value == "Hello\\nWorld"
+        assert "".join(chunks) == "Hello\nWorld"
+        assert final_value == "Hello\nWorld"
         await parser.dispose()
 
     @pytest.mark.asyncio
@@ -340,5 +340,5 @@ class TestBufferFlushFromTypeScript:
         c_stream = parser.get_string_property("c")
 
         results = await asyncio.gather(a_stream, b_stream, c_stream)
-        assert results == ["test1", "test2", "test3"]
+        assert list(results) == ["test1", "test2", "test3"]
         await parser.dispose()

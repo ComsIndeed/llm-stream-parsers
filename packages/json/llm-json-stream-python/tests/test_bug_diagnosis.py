@@ -100,10 +100,10 @@ class TestBugDiagnosisChunk25:
         weight_stream = parser.get_string_property("details.weight")
         material_stream = parser.get_string_property("details.material")
 
-        stream_color = []
-        stream_size = []
-        stream_weight = []
-        stream_material = []
+        stream_color: list[str] = []
+        stream_size: list[str] = []
+        stream_weight: list[str] = []
+        stream_material: list[str] = []
 
         async def collect(stream, target):
             async for chunk in stream:
@@ -127,7 +127,7 @@ class TestBugDiagnosisChunk25:
         assert "".join(stream_size) == "large"
         assert "".join(stream_weight) == "1.5kg"
         assert "".join(stream_material) == "plastic"
-        assert futures == ["red", "large", "1.5kg", "plastic"]
+        assert list(futures) == ["red", "large", "1.5kg", "plastic"]
         await parser.dispose()
 
 
@@ -188,7 +188,7 @@ class TestBugDiagnosisFromTypeScript:
         sci_stream = parser.get_number_property("sci")
 
         results = await asyncio.gather(int_stream, float_stream, neg_stream, sci_stream)
-        assert results == [42, 3.14, -10, 1e5]
+        assert list(results) == [42, 3.14, -10, 1e5]
         await parser.dispose()
 
     @pytest.mark.asyncio
@@ -233,7 +233,7 @@ class TestBugDiagnosisFromTypeScript:
         c_stream = parser.get_number_property("c")
 
         results = await asyncio.gather(a_stream, b_stream, c_stream)
-        assert results == [1, 2, 3]
+        assert list(results) == [1, 2, 3]
         await parser.dispose()
 
     @pytest.mark.asyncio

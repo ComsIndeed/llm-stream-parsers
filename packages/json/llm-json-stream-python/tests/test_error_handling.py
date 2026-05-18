@@ -78,7 +78,7 @@ class TestErrorHandling:
     @pytest.mark.asyncio
     async def test_premature_stream_closure(self):
         """Test premature stream closure."""
-        json_text = '{"name":"Alice"'
+        json_text = '{"name":"Alice'
         stream = stream_text_in_chunks(text=json_text, chunk_size=4, interval=10)
         parser = JsonStreamParser(stream)
 

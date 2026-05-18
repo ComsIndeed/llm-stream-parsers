@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any
+from typing import Any, Callable, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..json_stream_parser import JsonStreamParserController
 
 from ..property_delegate import PropertyDelegate
 from ..parse_event import ParseEvent, ParseEventType
@@ -43,7 +46,12 @@ class ArrayPropertyDelegate(PropertyDelegate):
         ]
     )
 
-    def __init__(self, property_path: str, parser_controller, on_complete=None) -> None:
+    def __init__(
+        self,
+        property_path: str,
+        parser_controller: JsonStreamParserController,
+        on_complete: Optional[Callable[[], None]] = None,
+    ) -> None:
         super().__init__(property_path, parser_controller, on_complete)
         self._state = _ArrayParserState.WAITING_FOR_VALUE
         self._index = 0
