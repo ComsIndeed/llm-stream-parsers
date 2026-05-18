@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLM JSON Stream Parsers Visualizer</title>
+    <!-- Google Fonts Outfit & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="app.js" defer></script>
+</head>
+<body>
+    <!-- Grid Overlay Background -->
+    <div class="grid-background"></div>
+
+    <div class="app-container">
+        <!-- HEADER CONTROL BAR -->
+        <header class="app-header">
+            <!-- TWO ROWS OF SELECTIONS -->
+            <div class="selector-rows">
+                <!-- ROW 1: Data Structures -->
+                <div class="selector-row">
+                    <span class="row-label">Data Structure</span>
+                    <div class="tab-buttons" id="payload-tabs">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+                
+                <!-- ROW 2: Language Implementations -->
+                <div class="selector-row">
+                    <span class="row-label">Parser Language</span>
+                    <div class="tab-buttons" id="language-tabs">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- QUICK SETTINGS & START BUTTON -->
+            <div class="quick-settings">
+                <div class="control-group slider-group">
+                    <div class="slider-label">
+                        <label for="chunk-size">Chunk Size</label>
+                        <span id="chunk-size-val">5</span>
+                    </div>
+                    <input type="range" id="chunk-size" min="1" max="50" value="5">
+                </div>
+
+                <div class="control-group slider-group">
+                    <div class="slider-label">
+                        <label for="speed-delay">Chunk Speed</label>
+                        <span id="speed-delay-val">50ms</span>
+                    </div>
+                    <input type="range" id="speed-delay" min="0" max="500" step="10" value="50">
+                </div>
+
+                <button id="start-btn" class="primary-btn">
+                    <span class="btn-text">Start Parsing</span>
+                    <span class="btn-glow"></span>
+                </button>
+            </div>
+        </header>
+
+        <!-- CORE VISUALIZER WORKSPACE -->
+        <main class="visualizer-workspace">
+            <!-- NOT IMPLEMENTED OVERLAY -->
+            <div class="workspace-overlay" id="not-implemented-overlay" style="display: none;">
+                <div class="overlay-content">
+                    <div class="overlay-icon">⚠️</div>
+                    <h2 id="overlay-title">Not Implemented Yet</h2>
+                    <p id="overlay-reason-msg">This parser implementation is not available yet.</p>
+                </div>
+            </div>
+            
+            <!-- COLUMN 1: RAW STREAM CONSOLE -->
+            <div class="workspace-column console-column">
+                <div class="column-header">
+                    <div class="status-indicator-dot" id="console-status-dot"></div>
+                    <h2>1. Raw LLM Stream</h2>
+                    <span class="column-badge">STREAMING INPUT</span>
+                </div>
+                <div class="console-card">
+                    <div class="window-decorations">
+                        <span class="dot red"></span>
+                        <span class="dot yellow"></span>
+                        <span class="dot green"></span>
+                        <span class="decor-title">stdin_stream</span>
+                    </div>
+                    <div class="code-viewport">
+                        <!-- Bottom Layer: Ghost text (Faint expected value) -->
+                        <pre class="ghost-code" id="ghost-code-view"></pre>
+                        <!-- Top Layer: Glowing streamed text -->
+                        <pre class="live-code" id="live-code-view"></pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COLUMN 2: TRANSIT INDICATOR -->
+            <div class="workspace-column bridge-column">
+                <div class="bridge-container">
+                    <div class="pulse-pipe">
+                        <div class="pulse-node" id="pulse-dot"></div>
+                    </div>
+                    <div class="arrow-svg">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M5 12H19M19 12L13 6M19 12L13 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COLUMN 3: PARSED TREE VIEW -->
+            <div class="workspace-column parser-column">
+                <div class="column-header">
+                    <div class="status-indicator-dot" id="parser-status-dot"></div>
+                    <h2>2. Real-time Parser Output</h2>
+                    <span class="column-badge">NATIVE PARSED KEYS</span>
+                </div>
+                <div class="parser-cards-container" id="properties-grid">
+                    <div class="cards-placeholder" id="cards-placeholder-msg">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M4 7V4C4 3.44772 4.44772 3 5 3H19C19.5523 3 20 3.44772 20 4V7M4 7H20M4 7V17C4 17.5523 4.44772 18 5 18H19C19.5523 18 20 17.5523 20 17V7M9 11L11 13L15 9" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <p>Select parameters and click "Start" to visualize properties parsing asynchronously.</p>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- SUBPROCESS STDOUT LOG PANEL -->
+        <footer class="app-footer">
+            <div class="footer-header">
+                <h3>Subprocess Output Logger</h3>
+                <span id="subprocess-state" class="status-pill idle">IDLE</span>
+            </div>
+            <div class="log-viewport" id="log-console">
+                <div class="log-line system">[system] Ready to launch subprocess runners.</div>
+            </div>
+        </footer>
+    </div>
+</body>
+</html>
