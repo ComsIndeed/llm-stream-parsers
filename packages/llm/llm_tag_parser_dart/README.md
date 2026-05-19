@@ -10,9 +10,7 @@
 
 Parse and isolate tagged blocks reactively as LLM responses stream in. Subscribe to blocks and receive values chunk-by-chunk as they are generated: no waiting for the complete response.
 
-![Hero demo showing tag block streaming in real-time](assets/demo/hero.gif)
-
-[**API Docs**](https://pub.dev/documentation/llm_tag_parser/latest/) · [**GitHub**](https://github.com/ComsIndeed/llm-tag-parser)
+[**API Docs**](https://pub.dev/documentation/llm_tag_parser/latest/) · [**GitHub**](https://github.com/ComsIndeed/llm-stream-parsers/tree/main/packages/llm/llm_tag_parser_dart)
 
 </div>
 
@@ -40,11 +38,7 @@ Parse and isolate tagged blocks reactively as LLM responses stream in. Subscribe
 
 ## The Problem
 
-LLMs stream responses token-by-token. Often, they generate mixed responses containing both conversational text and specialized blocks like thoughts, tool calls, or code blocks:
-
-![LLM stream chunks arriving with mixed tag blocks](assets/demo/problem.gif)
-
-Traditional string-searching or regex-based approaches fail because:
+LLMs stream responses token-by-token. Often, they generate mixed responses containing both conversational text and specialized blocks like thoughts, tool calls, or code blocks. Traditional string-searching or regex-based approaches fail because:
 
 | Approach | Problem |
 |----------|---------|
@@ -61,8 +55,6 @@ Instead of waiting for the entire response to finish, you can:
 - Stream tool parameters progressively
 - Keep conversational text completely separated from structured code blocks
 
-![Comparison showing traditional waiting vs smooth reactive tag parsing](assets/demo/comparison.gif)
-
 ---
 
 ## Quick Start
@@ -70,7 +62,7 @@ Instead of waiting for the entire response to finish, you can:
 ```yaml
 # pubspec.yaml
 dependencies:
-  llm_tag_parser: ^1.0.0
+  llm_tag_parser: ^0.1.0
 ```
 
 ```dart
@@ -359,6 +351,6 @@ MIT - see [LICENSE](LICENSE)
 
 **Made for Flutter developers building the next generation of AI-powered apps**
 
-[Star](https://github.com/ComsIndeed/llm-tag-parser) · [pub.dev](https://pub.dev/packages/llm_tag_parser) · [Issues](https://github.com/ComsIndeed/llm-tag-parser/issues)
+[GitHub](https://github.com/ComsIndeed/llm-stream-parsers/tree/main/packages/llm/llm_tag_parser_dart) · [pub.dev](https://pub.dev/packages/llm_tag_parser) · [Issues](https://github.com/ComsIndeed/llm-stream-parsers/issues)
 
 </div>
