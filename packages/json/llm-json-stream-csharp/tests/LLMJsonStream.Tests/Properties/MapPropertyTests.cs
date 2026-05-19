@@ -19,5 +19,6 @@ public class MapPropertyTests
     [InlineData("Map property `mapPropertyStream.stream` test")]
     public void MapProperty_Scenarios(string caseName)
     {
+        _ = caseName;
     }
 }

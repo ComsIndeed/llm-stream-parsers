@@ -14,5 +14,6 @@ public class AtomicStreamSubscriptionTests
     [InlineData("Atomic stream with chunked JSON delivery")]
     public void AtomicStreamSubscription_Scenarios(string caseName)
     {
+        _ = caseName;
     }
 }

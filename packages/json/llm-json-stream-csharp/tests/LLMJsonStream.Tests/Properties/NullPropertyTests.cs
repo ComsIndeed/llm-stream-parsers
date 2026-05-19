@@ -12,5 +12,6 @@ public class NullPropertyTests
     [InlineData("null mixed with other types")]
     public void NullProperty_Scenarios(string caseName)
     {
+        _ = caseName;
     }
 }

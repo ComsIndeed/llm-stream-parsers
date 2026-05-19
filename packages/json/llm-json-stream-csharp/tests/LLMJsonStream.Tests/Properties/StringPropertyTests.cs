@@ -17,5 +17,6 @@ public class StringPropertyTests
     [InlineData("string with multiple escape sequences")]
     public void StringProperty_Scenarios(string caseName)
     {
+        _ = caseName;
     }
 }

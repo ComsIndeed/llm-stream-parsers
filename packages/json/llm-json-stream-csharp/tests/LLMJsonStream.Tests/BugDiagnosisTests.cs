@@ -11,5 +11,6 @@ public class BugDiagnosisTests
     [InlineData("Concluding test for the bug")]
     public void BugDiagnosis_Scenarios(string caseName)
     {
+        _ = caseName;
     }
 }

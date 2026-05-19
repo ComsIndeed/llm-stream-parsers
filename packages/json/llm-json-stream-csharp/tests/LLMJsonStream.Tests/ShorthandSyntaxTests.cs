@@ -32,5 +32,6 @@ public class ShorthandSyntaxTests
     [InlineData("Complex mixed types with shorthand syntax")]
     public void ShorthandSyntax_Scenarios(string caseName)
     {
+        _ = caseName;
     }
 }

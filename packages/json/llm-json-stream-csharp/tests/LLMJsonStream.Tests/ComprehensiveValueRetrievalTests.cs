@@ -15,5 +15,6 @@ public class ComprehensiveValueRetrievalTests
     [InlineData("Edge Case Configurations")]
     public void ComprehensiveValueRetrieval_Scenarios(string caseName)
     {
+        _ = caseName;
     }
 }

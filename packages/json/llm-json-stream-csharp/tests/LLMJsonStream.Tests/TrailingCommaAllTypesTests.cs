@@ -34,5 +34,6 @@ public class TrailingCommaAllTypesTests
     [InlineData("all types with trailing commas in single object")]
     public void TrailingCommaAllTypes_Scenarios(string caseName)
     {
+        _ = caseName;
     }
 }

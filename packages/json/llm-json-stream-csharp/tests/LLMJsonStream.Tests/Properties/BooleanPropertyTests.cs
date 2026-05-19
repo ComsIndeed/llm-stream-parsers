@@ -12,5 +12,6 @@ public class BooleanPropertyTests
     [InlineData("multiple boolean properties")]
     public void BooleanProperty_Scenarios(string caseName)
     {
+        _ = caseName;
     }
 }

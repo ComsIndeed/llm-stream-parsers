@@ -42,5 +42,6 @@ public class LlmRobustnessTests
     [InlineData("extreme edge case - everything at once with weird spacing")]
     public void LlmRobustness_Scenarios(string caseName)
     {
+        _ = caseName;
     }
 }

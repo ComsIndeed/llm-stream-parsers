@@ -13,5 +13,6 @@ public class TrailingCommaDebugTests
     [InlineData("Test 6: Object inside array with trailing comma")]
     public void TrailingCommaDebug_Scenarios(string caseName)
     {
+        _ = caseName;
     }
 }

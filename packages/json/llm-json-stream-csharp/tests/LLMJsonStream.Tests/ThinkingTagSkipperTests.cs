@@ -47,5 +47,6 @@ public class ThinkingTagSkipperTests
     [InlineData("should not drop characters on partial thinking tag mismatch inside JSON string")]
     public void ThinkingTagSkipper_Scenarios(string caseName)
     {
+        _ = caseName;
     }
 }

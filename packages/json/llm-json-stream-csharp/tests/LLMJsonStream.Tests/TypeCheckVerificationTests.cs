@@ -9,5 +9,6 @@ public class TypeCheckVerificationTests
     [InlineData("Chaining works correctly on MapPropertyStream")]
     public void TypeCheckVerification_Scenarios(string caseName)
     {
+        _ = caseName;
     }
 }

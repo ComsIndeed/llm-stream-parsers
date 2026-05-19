@@ -17,5 +17,6 @@ public class StreamCompletionTests
     [InlineData("close stream with delay after adding data")]
     public void StreamCompletion_Scenarios(string caseName)
     {
+        _ = caseName;
     }
 }

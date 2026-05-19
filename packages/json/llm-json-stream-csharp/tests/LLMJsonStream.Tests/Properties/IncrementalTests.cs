@@ -15,5 +15,6 @@ public class IncrementalTests
     [InlineData("Nested map in list emits on each chunk")]
     public void Incremental_Scenarios(string caseName)
     {
+        _ = caseName;
     }
 }

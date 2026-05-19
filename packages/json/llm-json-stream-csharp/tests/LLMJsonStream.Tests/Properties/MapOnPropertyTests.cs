@@ -14,5 +14,6 @@ public class MapOnPropertyTests
     [InlineData("onProperty and stream work together")]
     public void MapOnProperty_Scenarios(string caseName)
     {
+        _ = caseName;
     }
 }

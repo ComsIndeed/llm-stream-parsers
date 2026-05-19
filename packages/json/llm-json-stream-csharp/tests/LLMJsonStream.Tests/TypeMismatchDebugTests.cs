@@ -9,5 +9,6 @@ public class TypeMismatchDebugTests
     [InlineData("Test: {\"test\":[1,2,]} trying to getNumberProperty(\"test\")")]
     public void TypeMismatchDebug_Scenarios(string caseName)
     {
+        _ = caseName;
     }
 }

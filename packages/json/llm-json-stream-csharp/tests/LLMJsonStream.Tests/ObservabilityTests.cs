@@ -20,5 +20,6 @@ public class ObservabilityTests
     [InlineData("Parser emits error event on type mismatch")]
     public void Observability_Scenarios(string caseName)
     {
+        _ = caseName;
     }
 }

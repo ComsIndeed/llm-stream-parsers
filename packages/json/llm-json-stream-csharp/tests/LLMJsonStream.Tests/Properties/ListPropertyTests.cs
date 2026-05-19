@@ -33,5 +33,6 @@ public class ListPropertyTests
     [InlineData("List property `listPropertyStream.stream` test")]
     public void ListProperty_Scenarios(string caseName)
     {
+        _ = caseName;
     }
 }

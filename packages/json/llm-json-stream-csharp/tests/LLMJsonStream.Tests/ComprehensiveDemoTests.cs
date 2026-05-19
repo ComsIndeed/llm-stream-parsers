@@ -13,5 +13,6 @@ public class ComprehensiveDemoTests
     [InlineData("SPECIFIC: Very small chunks with long description")]
     public void ComprehensiveDemo_Scenarios(string caseName)
     {
+        _ = caseName;
     }
 }

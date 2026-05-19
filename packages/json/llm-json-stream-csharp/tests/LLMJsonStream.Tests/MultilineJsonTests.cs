@@ -15,5 +15,6 @@ public class MultilineJsonTests
     [InlineData("Windows-style line endings (CRLF)")]
     public void MultilineJson_Scenarios(string caseName)
     {
+        _ = caseName;
     }
 }

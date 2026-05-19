@@ -18,5 +18,6 @@ public class NumberPropertyTests
     [InlineData("number as num type")]
     public void NumberProperty_Scenarios(string caseName)
     {
+        _ = caseName;
     }
 }
