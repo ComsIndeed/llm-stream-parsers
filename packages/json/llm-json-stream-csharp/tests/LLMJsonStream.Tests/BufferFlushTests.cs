@@ -15,5 +15,6 @@ public class BufferFlushTests
     [InlineData("track when onChunkEnd is called")]
     public void BufferFlush_Scenarios(string caseName)
     {
+        _ = caseName;
     }
 }

@@ -28,5 +28,6 @@ public class ErrorHandlingTests
     [InlineData("empty string")]
     public void ErrorHandling_Scenarios(string caseName)
     {
+        _ = caseName;
     }
 }

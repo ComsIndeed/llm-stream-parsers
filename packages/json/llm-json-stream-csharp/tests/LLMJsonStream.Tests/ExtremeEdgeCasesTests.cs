@@ -24,5 +24,6 @@ public class ExtremeEdgeCasesTests
     [InlineData("real LLM output simulation - Claude style")]
     public void ExtremeEdgeCases_Scenarios(string caseName)
     {
+        _ = caseName;
     }
 }

@@ -20,5 +20,6 @@ public class CriticalBugTests
     [InlineData("instant delivery (0ms) with massive chunk")]
     public void CriticalBug_Scenarios(string caseName)
     {
+        _ = caseName;
     }
 }

@@ -25,5 +25,6 @@ public class EdgeCaseFindingsTests
     [InlineData("very small decimal")]
     public void EdgeCaseFindings_Scenarios(string caseName)
     {
+        _ = caseName;
     }
 }

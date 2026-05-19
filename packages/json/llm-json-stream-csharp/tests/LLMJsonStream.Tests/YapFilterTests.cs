@@ -14,5 +14,6 @@ public class YapFilterTests
     [InlineData("Chunked JSON completes correctly before yap")]
     public void YapFilter_Scenarios(string caseName)
     {
+        _ = caseName;
     }
 }
