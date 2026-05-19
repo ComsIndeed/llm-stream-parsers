@@ -180,6 +180,7 @@ class LlmTagParser {
   final StreamController<_TextEvent> _textController = StreamController.broadcast();
   final StreamController<_AttributeEvent> _attributeController = StreamController.broadcast();
   final int _maxDelimiterLength;
+  late final Set<String> _delimiters;
   bool _isClosed = false;
 
   LlmTagParser({
@@ -189,6 +190,7 @@ class LlmTagParser {
           for (final tag in tags) tag.open: _TagDefinition.fromTag(tag),
         },
         _maxDelimiterLength = _computeMaxDelimiterLength(tags) {
+    _delimiters = _computeDelimiters();
     for (final tag in _tagDefinitions.values) {
       _depths[tag.openKey] = 0;
     }
@@ -203,6 +205,31 @@ class LlmTagParser {
         _attributeController.close();
       },
     );
+  }
+
+  Set<String> _computeDelimiters() {
+    final Set<String> delimiters = {};
+    for (final tag in _tagDefinitions.values) {
+      delimiters.add(tag.close);
+      delimiters.add(tag.openPrefix);
+    }
+    return delimiters;
+  }
+
+  int _computeDynamicKeepLength(String buffer) {
+    if (buffer.isEmpty) return 0;
+    
+    final maxLen = buffer.length < _maxDelimiterLength ? buffer.length : _maxDelimiterLength;
+    
+    for (var len = maxLen; len >= 1; len--) {
+      final suffix = buffer.substring(buffer.length - len);
+      final isPrefixOfAny = _delimiters.any((del) => del.startsWith(suffix));
+      if (isPrefixOfAny) {
+        return len;
+      }
+    }
+    
+    return 0;
   }
 
   LlmTagContent within(String tag) => LlmTagContent(this).within(tag);
@@ -223,8 +250,8 @@ class LlmTagParser {
           return;
         }
 
-        final keepLength = _maxDelimiterLength > 0 ? _maxDelimiterLength - 1 : 0;
-        if (_pendingBuffer.length <= keepLength || keepLength == 0) {
+        final keepLength = _computeDynamicKeepLength(_pendingBuffer);
+        if (keepLength == _pendingBuffer.length) {
           return;
         }
         final emitUntil = _pendingBuffer.length - keepLength;
