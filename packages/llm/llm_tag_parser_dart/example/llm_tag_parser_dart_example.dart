@@ -1,6 +1,9 @@
+// ignore_for_file: avoid_print
+
 import 'package:llm_tag_parser/llm_tag_parser.dart';
 
 void main() {
+
   final stream = Stream.fromIterable(['<thinking>', 'Hello', '</thinking>', ' world!']);
   final parser = LlmTagParser(
     stream: stream,
