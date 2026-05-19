@@ -1,5 +1,5 @@
-class LlmStreamParserDart {
-  LlmStreamParserDart({
+class LlmTagParserDart {
+  LlmTagParserDart({
     required Stream<String> stream,
     required List<String> startTags,
     required List<String> stopTags,

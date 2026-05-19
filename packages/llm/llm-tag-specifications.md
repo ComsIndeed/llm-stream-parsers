@@ -9,7 +9,7 @@ Hi what can I do for you?
 
 ```dart
 final llmStream = ...; // stream of strings
-final parser = LlmStreamParser(
+final parser = LlmTagParser(
   stream: llmStream,
   tags: {
     '<thinking>': '</thinking>',
@@ -40,7 +40,7 @@ Deep nesting:
 
 ```dart
 final llmStream = ...; // stream of strings
-final parser = LlmStreamParser(
+final parser = LlmTagParser(
   stream: llmStream,
   tags: {
     '<thinking>': '</thinking>',
@@ -84,7 +84,7 @@ Let me know if there is anything else I can help you with.
 
 ```dart
 final llmStream = ...; // stream of strings
-final parser = LlmStreamParser(
+final parser = LlmTagParser(
   stream: llmStream,
   tags: {
     '<interface>': '</interface>',
