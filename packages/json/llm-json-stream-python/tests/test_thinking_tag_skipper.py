@@ -125,3 +125,14 @@ class TestThinkingTagSkipperBasicFunctionality:
         value = await parser.get_number_property("value")
         assert value == 3
         await parser.dispose()
+
+    @pytest.mark.asyncio
+    async def test_no_character_dropping_on_partial_tag_mismatch_inside_json(self):
+        """Test that partial thinking tags inside JSON strings do not cause character dropping."""
+        json_text = '{"text": "I love <the color and <thi is nice"}'
+        stream = stream_text_in_chunks(text=json_text, chunk_size=3, interval=5)
+        parser = JsonStreamParser(stream, skip_thoughts=True)
+
+        text = await parser.get_string_property("text")
+        assert text == "I love <the color and <thi is nice"
+        await parser.dispose()

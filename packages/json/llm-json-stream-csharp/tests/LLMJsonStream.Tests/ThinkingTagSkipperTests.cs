@@ -44,6 +44,7 @@ public class ThinkingTagSkipperTests
     [InlineData("should parse null after thinking")]
     [InlineData("should parse floating point number after thinking")]
     [InlineData("should parse negative number after thinking")]
+    [InlineData("should not drop characters on partial thinking tag mismatch inside JSON string")]
     public void ThinkingTagSkipper_Scenarios(string caseName)
     {
     }

@@ -94,13 +94,21 @@ export class JsonStreamParser {
     private disposed = false;
     private rootDelegate: PropertyDelegate | null = null;
     private closeOnRootComplete: boolean;
+    private skipThoughts: boolean;
+    private thinkingTags: [string, string];
     private consumeStreamPromise: Promise<void> | null = null;
 
     constructor(
         stream: AsyncIterable<string>,
-        options?: { closeOnRootComplete?: boolean },
+        options?: {
+            closeOnRootComplete?: boolean;
+            skipThoughts?: boolean;
+            thinkingTags?: [string, string];
+        },
     ) {
         this.closeOnRootComplete = options?.closeOnRootComplete ?? true;
+        this.skipThoughts = options?.skipThoughts ?? false;
+        this.thinkingTags = options?.thinkingTags ?? ["<think>", "</think>"];
 
         this.controller = new JsonStreamParserController(
             this.addPropertyChunk.bind(this),
