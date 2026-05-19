@@ -146,6 +146,16 @@ Content.
 </interface>
 ''';
 
+const sampleFalseAlarm = 'This is a <thinking false alarm because it has no closing bracket.';
+
+const sampleSelfClosingTag = 'Before <interface id="loader" /> After';
+
+const sampleMalformedAttributes = 'Before <interface id="main type=panel>Content</interface> After';
+
+const sampleInterleavedTags = '<thinking><tool_use>Interleaved</thinking></tool_use>';
+
+const samplePrefixOverlap = '<thinking>Hello</thinking>';
+
 // ─────────────────────────────────────────────────────────────────────────────
 // UTILITY: collect full stream into string
 // ─────────────────────────────────────────────────────────────────────────────
@@ -709,5 +719,74 @@ void main() {
         expect(outside.trim(), contains('Hi, what can I do for you?'));
       });
     }
+  });
+
+  // ───────────────────────────────────────────
+  // GROUP: Edge cases — Level 5 Hardcore Resilience
+  // ───────────────────────────────────────────
+  group('Edge cases — Level 5 Hardcore Resilience', () {
+    test('false alarm / partial match backtrack', () async {
+      final parser = LlmTagParser(
+        stream: streamTextInChunks(sampleFalseAlarm),
+        tags: [LlmTag(open: '<thinking>', close: '</thinking>')],
+      );
+      final outside = await collectStream(parser.outside('<thinking>').stream);
+      final inside = await collectStream(parser.within('<thinking>').stream);
+      expect(outside, contains('<thinking'));
+      expect(inside, isEmpty);
+    });
+
+    test('prefix overlap selects the longest match', () async {
+      final parser = LlmTagParser(
+        stream: streamTextInChunks(samplePrefixOverlap),
+        tags: [
+          LlmTag(open: '<think>', close: '</think>'),
+          LlmTag(open: '<thinking>', close: '</thinking>'),
+        ],
+      );
+      final thinking = await collectStream(parser.within('<thinking>').stream);
+      final think = await collectStream(parser.within('<think>').stream);
+      expect(thinking.trim(), equals('Hello'));
+      expect(think, isEmpty);
+    });
+
+    test('self-closing tag resolves immediately with empty stream', () async {
+      final parser = LlmTagParser(
+        stream: streamTextInChunks(sampleSelfClosingTag),
+        tags: [LlmTag(open: '<interface {attrs}>', close: '</interface>')],
+      );
+      final inside = await collectStream(parser.within('<interface {attrs}>').stream);
+      final outside = await collectStream(parser.outside('<interface {attrs}>').stream);
+      final attrs = await parser.within('<interface {attrs}>').attributes;
+
+      expect(inside.trim(), isEmpty);
+      expect(outside, contains('Before  After'));
+      expect(attrs['id'], equals('loader'));
+    });
+
+    test('malformed attributes parse gracefully', () async {
+      final parser = LlmTagParser(
+        stream: streamTextInChunks(sampleMalformedAttributes),
+        tags: [LlmTag(open: '<interface {attrs}>', close: '</interface>')],
+      );
+      final attrs = await parser.within('<interface {attrs}>').attributes;
+      final inside = await collectStream(parser.within('<interface {attrs}>').stream);
+      expect(inside, equals('Content'));
+      expect(attrs, isNotNull);
+    });
+
+    test('interleaved tags handled gracefully', () async {
+      final parser = LlmTagParser(
+        stream: streamTextInChunks(sampleInterleavedTags),
+        tags: [
+          LlmTag(open: '<thinking>', close: '</thinking>'),
+          LlmTag(open: '<tool_use>', close: '</tool_use>'),
+        ],
+      );
+      final thinking = await collectStream(parser.within('<thinking>').stream);
+      final tool = await collectStream(parser.within('<tool_use>').stream);
+      expect(thinking, contains('Interleaved'));
+      expect(tool, contains('Interleaved'));
+    });
   });
 }
