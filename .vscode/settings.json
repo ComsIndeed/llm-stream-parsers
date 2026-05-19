@@ -2,5 +2,6 @@
     "python.analysis.extraPaths": [
         "packages/json/llm-json-stream-python/src"
     ],
-    "python.analysis.diagnosticMode": "workspace"
+    "python.analysis.diagnosticMode": "workspace",
+    "dart.projectSearchDepth": 5
 }
