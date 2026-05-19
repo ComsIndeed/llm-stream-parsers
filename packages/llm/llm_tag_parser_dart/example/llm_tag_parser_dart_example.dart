@@ -1,11 +1,12 @@
-import 'package:llm_tag_parser_dart/llm_tag_parser_dart.dart';
+import 'package:llm_tag_parser/llm_tag_parser.dart';
 
 void main() {
   final stream = Stream.fromIterable(['<thinking>', 'Hello', '</thinking>', ' world!']);
-  final parser = LlmTagParserDart(
+  final parser = LlmTagParser(
     stream: stream,
-    startTags: ['<thinking>'],
-    stopTags: ['</thinking>'],
+    tags: [
+      LlmTag(open: '<thinking>', close: '</thinking>'),
+    ],
   );
   print('Parser initialized: $parser');
 }
