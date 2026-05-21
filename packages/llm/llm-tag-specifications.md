@@ -166,8 +166,8 @@ magic — recommended examples always use the no-space form.
 override it via `.withAttributes()`:
 
 ```dart
-LlmTag(open: '<interface|||>', close: '</interface>')
-  .withAttributes('|||', format: AttributeFormat.xml)
+LlmTag(open: '<interface$$$$>', close: '</interface>')
+  .withAttributes('$$$$', format: AttributeFormat.xml)
 ```
 
 **Attribute formats:**
