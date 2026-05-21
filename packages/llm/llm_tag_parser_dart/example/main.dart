@@ -7,7 +7,6 @@ void main() async {
   const reset = '\x1B[0m';
   const cyan = '\x1B[36m';
   const green = '\x1B[32m';
-  const yellow = '\x1B[33m';
   const magenta = '\x1B[35m';
   const gray = '\x1B[90m';
   const bold = '\x1B[1m';

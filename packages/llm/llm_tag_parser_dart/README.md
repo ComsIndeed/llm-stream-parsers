@@ -8,9 +8,12 @@
 [![Dart](https://img.shields.io/badge/dart-%3E%3D3.11.0-blue)]()
 [![License: MIT](https://img.shields.io/badge/license-MIT-purple.svg)](LICENSE)
 
-Parse and isolate tagged blocks reactively as LLM responses stream in. Subscribe to blocks and receive values chunk-by-chunk as they are generated: no waiting for the complete response.
+Parse and isolate tagged blocks reactively as LLM responses stream in. Subscribe
+to blocks and receive values chunk-by-chunk as they are generated: no waiting
+for the complete response.
 
-[**API Docs**](https://pub.dev/documentation/llm_tag_parser/latest/) · [**GitHub**](https://github.com/ComsIndeed/llm-stream-parsers/tree/main/packages/llm/llm_tag_parser_dart)
+[**API Docs**](https://pub.dev/documentation/llm_tag_parser/latest/) ·
+[**GitHub**](https://github.com/ComsIndeed/llm-stream-parsers/tree/main/packages/llm/llm_tag_parser_dart)
 
 </div>
 
@@ -38,19 +41,25 @@ Parse and isolate tagged blocks reactively as LLM responses stream in. Subscribe
 
 ## The Problem
 
-LLMs stream responses token-by-token. Often, they generate mixed responses containing both conversational text and specialized blocks like thoughts, tool calls, or code blocks. Traditional string-searching or regex-based approaches fail because:
+LLMs stream responses token-by-token. Often, they generate mixed responses
+containing both conversational text and specialized blocks like thoughts, tool
+calls, or code blocks. Traditional string-searching or regex-based approaches
+fail because:
 
-| Approach | Problem |
-|----------|---------|
-| Wait for complete response | Introduces high latency, defeats the purpose of streaming |
+| Approach                       | Problem                                                    |
+| ------------------------------ | ---------------------------------------------------------- |
+| Wait for complete response     | Introduces high latency, defeats the purpose of streaming  |
 | Substring search on raw stream | Fails on partial tags split across chunks, high complexity |
-| Custom state-machine parser | Hard to implement, error-prone, handles boundaries poorly |
+| Custom state-machine parser    | Hard to implement, error-prone, handles boundaries poorly  |
 
 ## The Solution
 
-LLM Tag Parser processes streams token-by-token as they arrive, allowing you to subscribe to content inside tags, content outside tags, and even nested tags the moment they begin streaming.
+LLM Tag Parser processes streams token-by-token as they arrive, allowing you to
+subscribe to content inside tags, content outside tags, and even nested tags the
+moment they begin streaming.
 
 Instead of waiting for the entire response to finish, you can:
+
 - Render thought blocks in a collapsible UI element in real-time
 - Stream tool parameters progressively
 - Keep conversational text completely separated from structured code blocks
@@ -62,7 +71,7 @@ Instead of waiting for the entire response to finish, you can:
 ```yaml
 # pubspec.yaml
 dependencies:
-  llm_tag_parser: ^0.1.0
+  llm_tag_parser: ^0.1.2
 ```
 
 ```dart
@@ -92,7 +101,8 @@ parser.outside('<thinking>').stream.listen((chunk) {
 
 ### Two APIs for Every Match
 
-Every isolated block (within or outside) provides both a stream for real-time updates and a future for the complete value:
+Every isolated block (within or outside) provides both a stream for real-time
+updates and a future for the complete value:
 
 ```dart
 final content = parser.within('<thinking>');
@@ -101,9 +111,9 @@ content.stream.listen((chunk) => ...); // Incremental chunks as they arrive
 final complete = await content.future;  // The fully accumulated string
 ```
 
-| Use Case | API |
-|----------|-----|
-| Smooth UI typing effects | `.stream` |
+| Use Case                                     | API       |
+| -------------------------------------------- | --------- |
+| Smooth UI typing effects                     | `.stream` |
 | Accumulating tool calls, JSON, or processing | `.future` |
 
 ---
@@ -122,7 +132,8 @@ parser.within('<thinking>').stream.listen((chunk) {
 
 ### Streaming Outer Content
 
-Capture only the main conversational text, omitting thoughts or tool invocations completely:
+Capture only the main conversational text, omitting thoughts or tool invocations
+completely:
 
 ```dart
 parser.outside('<thinking>').stream.listen((chunk) {
@@ -179,7 +190,9 @@ final parser = LlmTagParser(
 
 ### Robust Stream Buffering
 
-To prevent race conditions where a subscriber listens to the stream after the initial tokens have already passed, the parser automatically buffers. A late subscriber will always receive all prior emitted chunks:
+To prevent race conditions where a subscriber listens to the stream after the
+initial tokens have already passed, the parser automatically buffers. A late
+subscriber will always receive all prior emitted chunks:
 
 ```dart
 final content = parser.within('<thinking>');
@@ -238,9 +251,9 @@ void main() async {
 
 ### LlmTagParser Methods
 
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `.within(tag)` | `LlmTagContent` | Isolate the inner content of a tag. |
+| Method          | Returns         | Description                                                   |
+| --------------- | --------------- | ------------------------------------------------------------- |
+| `.within(tag)`  | `LlmTagContent` | Isolate the inner content of a tag.                           |
 | `.outside(tag)` | `LlmTagContent` | Isolate the outer content (conversational text) around a tag. |
 
 ### LlmTagContent Interface
@@ -260,13 +273,17 @@ void main() async {
 
 Battle-tested resilience handling the realities of streaming LLM outputs:
 
-| Category | What is Covered |
-|----------|----------------|
-| **Backtracking** | False alarm tag beginnings (like `x < thinking`) are gracefully returned to conversational text instead of being swallowed. |
-| **Ambiguity** | Handles overlapping tag prefixes (like `<think>` and `<thinking>`) using longest-match win resolution. |
-| **Self-Closing Tags** | Automatically recognizes `<tag />` forms, closing the content stream immediately and extracting attributes. |
-| **Malformed Attributes** | Gracefully processes missing quotes, single quotes, unquoted values, or extra whitespaces in tag headers. |
-| **Chunk Boundaries** | Token detection remains fully invariant whether keywords arrive as a single chunk or are split character-by-character. |
+| Category                 | What is Covered                                                                                                                                                             |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Backtracking**         | False alarm tag beginnings (like `x < thinking`) are gracefully returned to conversational text instead of being swallowed.                                                 |
+| **Ambiguity**            | Handles overlapping tag prefixes (like `<think>` and `<thinking>`) using longest-match win resolution.                                                                      |
+| **Self-Closing Tags**    | Automatically recognizes `<tag />` forms, closing the content stream immediately and extracting attributes.                                                                 |
+| **Attribute Keys**       | Full support for namespaces, hyphens, periods, and numbers in keys (e.g., `data-id`, `xml:lang`, `ns:a.b-c_d`).                                                             |
+| **Unquoted Values**      | Handles forgiving unquoted value assignments gracefully (e.g., `id=main`).                                                                                                  |
+| **Escaped Quotes**       | Parses escaped quotation characters (e.g., `\"`, `\'`) inside values without data truncation.                                                                               |
+| **Boolean Flags**        | Automatically identifies boolean/key-only attributes (e.g., `disabled` or `checked`) and maps them as flags.                                                                |
+| **Delimiter Collisions** | Quote-aware tag boundaries prevent parsing errors when mathematical operators (like `age > 21`), nested brackets, or tag closing sequences occur inside attribute values.   |
+| **Chunk Boundaries**     | Token and attribute detection remains fully invariant whether keywords and values arrive as a single chunk or are split character-by-character across streaming boundaries. |
 
 ---
 
@@ -351,6 +368,8 @@ MIT - see [LICENSE](LICENSE)
 
 **Made for Flutter developers building the next generation of AI-powered apps**
 
-[GitHub](https://github.com/ComsIndeed/llm-stream-parsers/tree/main/packages/llm/llm_tag_parser_dart) · [pub.dev](https://pub.dev/packages/llm_tag_parser) · [Issues](https://github.com/ComsIndeed/llm-stream-parsers/issues)
+[GitHub](https://github.com/ComsIndeed/llm-stream-parsers/tree/main/packages/llm/llm_tag_parser_dart)
+· [pub.dev](https://pub.dev/packages/llm_tag_parser) ·
+[Issues](https://github.com/ComsIndeed/llm-stream-parsers/issues)
 
 </div>
