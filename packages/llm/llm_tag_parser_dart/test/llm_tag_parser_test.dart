@@ -789,4 +789,300 @@ void main() {
       expect(tool, contains('Interleaved'));
     });
   });
+
+  // ───────────────────────────────────────────
+  // GROUP: Attributes Robustness - Intensive Edge Cases
+  // ───────────────────────────────────────────
+  group('Attributes Robustness - Intensive Edge Cases', () {
+    // CATEGORY A: Key-Value Syntax & Special Character Keys
+    group('Category A: Key-Value Syntax & Special Character Keys', () {
+      test('A.1: Keys with standard hyphens and namespaces', () async {
+        final parser = LlmTagParser(
+          stream: streamTextInChunks('<interface data-id="123" xml:lang="en">Content</interface>'),
+          tags: [LlmTag(open: '<interface {attrs}>', close: '</interface>')],
+        );
+        final attrs = await parser.within('<interface {attrs}>').attributes;
+        expect(attrs['data-id'], equals('123'));
+        expect(attrs['xml:lang'], equals('en'));
+      });
+
+      test('A.2: Keys with dots, underscores, and mixed symbols', () async {
+        final parser = LlmTagParser(
+          stream: streamTextInChunks('<interface my.custom_field-name="val1" package:version="2.0">Content</interface>'),
+          tags: [LlmTag(open: '<interface {attrs}>', close: '</interface>')],
+        );
+        final attrs = await parser.within('<interface {attrs}>').attributes;
+        expect(attrs['my.custom_field-name'], equals('val1'));
+        expect(attrs['package:version'], equals('2.0'));
+      });
+
+      test('A.3: Mixed case sensitivity and leading symbols', () async {
+        final parser = LlmTagParser(
+          stream: streamTextInChunks('<interface _id="test" KEY-VALUE="extreme">Content</interface>'),
+          tags: [LlmTag(open: '<interface {attrs}>', close: '</interface>')],
+        );
+        final attrs = await parser.within('<interface {attrs}>').attributes;
+        expect(attrs['_id'], equals('test'));
+        expect(attrs['KEY-VALUE'], equals('extreme'));
+      });
+
+      test('A.4: Keys starting with or containing numbers', () async {
+        final parser = LlmTagParser(
+          stream: streamTextInChunks('<interface 123attr="one" alpha3="two">Content</interface>'),
+          tags: [LlmTag(open: '<interface {attrs}>', close: '</interface>')],
+        );
+        final attrs = await parser.within('<interface {attrs}>').attributes;
+        expect(attrs['123attr'], equals('one'));
+        expect(attrs['alpha3'], equals('two'));
+      });
+
+      test('A.5: Extremely intense XML-compliant special characters', () async {
+        final parser = LlmTagParser(
+          stream: streamTextInChunks('<interface ns:a.b-c_d="intense_val">Content</interface>'),
+          tags: [LlmTag(open: '<interface {attrs}>', close: '</interface>')],
+        );
+        final attrs = await parser.within('<interface {attrs}>').attributes;
+        expect(attrs['ns:a.b-c_d'], equals('intense_val'));
+      });
+    });
+
+    // CATEGORY B: Quoting Variations & Escapes
+    group('Category B: Quoting Variations & Escapes', () {
+      test('B.1: Simple unquoted attribute value', () async {
+        final parser = LlmTagParser(
+          stream: streamTextInChunks('<interface id=main>Content</interface>'),
+          tags: [LlmTag(open: '<interface {attrs}>', close: '</interface>')],
+        );
+        final attrs = await parser.within('<interface {attrs}>').attributes;
+        expect(attrs['id'], equals('main'));
+      });
+
+      test('B.2: Mixed unquoted, single-quoted, and double-quoted attributes', () async {
+        final parser = LlmTagParser(
+          stream: streamTextInChunks('<interface id=main type=\'panel\' class="container">Content</interface>'),
+          tags: [LlmTag(open: '<interface {attrs}>', close: '</interface>')],
+        );
+        final attrs = await parser.within('<interface {attrs}>').attributes;
+        expect(attrs['id'], equals('main'));
+        expect(attrs['type'], equals('panel'));
+        expect(attrs['class'], equals('container'));
+      });
+
+      test('B.3: Escaped double quotes inside double quotes', () async {
+        final parser = LlmTagParser(
+          stream: streamTextInChunks('<interface description="This is a \\"cool\\" feature" name="john">Content</interface>'),
+          tags: [LlmTag(open: '<interface {attrs}>', close: '</interface>')],
+        );
+        final attrs = await parser.within('<interface {attrs}>').attributes;
+        expect(attrs['description'], equals('This is a "cool" feature'));
+        expect(attrs['name'], equals('john'));
+      });
+
+      test('B.4: Escaped single quotes inside single quotes', () async {
+        final parser = LlmTagParser(
+          stream: streamTextInChunks('<interface phrase=\'It\\\'s a beautiful day\' active=true>Content</interface>'),
+          tags: [LlmTag(open: '<interface {attrs}>', close: '</interface>')],
+        );
+        final attrs = await parser.within('<interface {attrs}>').attributes;
+        expect(attrs['phrase'], equals("It's a beautiful day"));
+        expect(attrs['active'], equals('true'));
+      });
+
+      test('B.5: Highly intense nested and mixed escapes', () async {
+        final parser = LlmTagParser(
+          stream: streamTextInChunks('<interface json="{\\"a\\": \\"b\\", \\"c\\": \'d\'}" raw=\'escaped \\" quotes\'>Content</interface>'),
+          tags: [LlmTag(open: '<interface {attrs}>', close: '</interface>')],
+        );
+        final attrs = await parser.within('<interface {attrs}>').attributes;
+        expect(attrs['json'], equals('{"a": "b", "c": \'d\'}'));
+        expect(attrs['raw'], equals('escaped " quotes'));
+      });
+    });
+
+    // CATEGORY C: Delimiter & Structural Bracket Collisions
+    group('Category C: Delimiter & Structural Bracket Collisions', () {
+      test('C.1: Attribute value containing angle bracket closing symbol', () async {
+        final parser = LlmTagParser(
+          stream: streamTextInChunks('<interface condition="age > 21">Content</interface>'),
+          tags: [LlmTag(open: '<interface {attrs}>', close: '</interface>')],
+        );
+        final attrs = await parser.within('<interface {attrs}>').attributes;
+        final inside = await collectStream(parser.within('<interface {attrs}>').stream);
+        expect(attrs['condition'], equals('age > 21'));
+        expect(inside, equals('Content'));
+      });
+
+      test('C.2: Attribute value containing multiple mathematical operators', () async {
+        final parser = LlmTagParser(
+          stream: streamTextInChunks('<interface formula="a < b && c > d">Content</interface>'),
+          tags: [LlmTag(open: '<interface {attrs}>', close: '</interface>')],
+        );
+        final attrs = await parser.within('<interface {attrs}>').attributes;
+        final inside = await collectStream(parser.within('<interface {attrs}>').stream);
+        expect(attrs['formula'], equals('a < b && c > d'));
+        expect(inside, equals('Content'));
+      });
+
+      test('C.3: Attribute value containing partial HTML/XML tags', () async {
+        final parser = LlmTagParser(
+          stream: streamTextInChunks('<interface template="<div class=\\"test\\">">Content</interface>'),
+          tags: [LlmTag(open: '<interface {attrs}>', close: '</interface>')],
+        );
+        final attrs = await parser.within('<interface {attrs}>').attributes;
+        final inside = await collectStream(parser.within('<interface {attrs}>').stream);
+        expect(attrs['template'], equals('<div class="test">'));
+        expect(inside, equals('Content'));
+      });
+
+      test('C.4: Attribute value containing the full close tag sequence', () async {
+        final parser = LlmTagParser(
+          stream: streamTextInChunks('<interface unsafe="Inside </interface> text">Content</interface>'),
+          tags: [LlmTag(open: '<interface {attrs}>', close: '</interface>')],
+        );
+        final attrs = await parser.within('<interface {attrs}>').attributes;
+        final inside = await collectStream(parser.within('<interface {attrs}>').stream);
+        expect(attrs['unsafe'], equals('Inside </interface> text'));
+        expect(inside, equals('Content'));
+      });
+
+      test('C.5: Intense nested tags, brackets, and self-closing slashes', () async {
+        final parser = LlmTagParser(
+          stream: streamTextInChunks('<interface data="<nested tag=\'attr\' />" test="x > y">Content</interface>'),
+          tags: [LlmTag(open: '<interface {attrs}>', close: '</interface>')],
+        );
+        final attrs = await parser.within('<interface {attrs}>').attributes;
+        final inside = await collectStream(parser.within('<interface {attrs}>').stream);
+        expect(attrs['data'], equals("<nested tag='attr' />"));
+        expect(attrs['test'], equals('x > y'));
+        expect(inside, equals('Content'));
+      });
+    });
+
+    // CATEGORY D: Boolean & Key-Only Attributes
+    group('Category D: Boolean & Key-Only Attributes', () {
+      test('D.1: Single standalone boolean flag', () async {
+        final parser = LlmTagParser(
+          stream: streamTextInChunks('<interface disabled>Content</interface>'),
+          tags: [LlmTag(open: '<interface {attrs}>', close: '</interface>')],
+        );
+        final attrs = await parser.within('<interface {attrs}>').attributes;
+        expect(attrs.containsKey('disabled'), isTrue);
+      });
+
+      test('D.2: Mixed boolean flags and standard attributes', () async {
+        final parser = LlmTagParser(
+          stream: streamTextInChunks('<interface checked readonly class="input" disabled>Content</interface>'),
+          tags: [LlmTag(open: '<interface {attrs}>', close: '</interface>')],
+        );
+        final attrs = await parser.within('<interface {attrs}>').attributes;
+        expect(attrs.containsKey('checked'), isTrue);
+        expect(attrs.containsKey('readonly'), isTrue);
+        expect(attrs['class'], equals('input'));
+        expect(attrs.containsKey('disabled'), isTrue);
+      });
+
+      test('D.3: Boolean flag adjacent to self-closing slash', () async {
+        final parser = LlmTagParser(
+          stream: streamTextInChunks('<interface id="btn" disabled/>'),
+          tags: [LlmTag(open: '<interface {attrs}>', close: '</interface>')],
+        );
+        final attrs = await parser.within('<interface {attrs}>').attributes;
+        expect(attrs['id'], equals('btn'));
+        expect(attrs.containsKey('disabled'), isTrue);
+      });
+
+      test('D.4: Boolean flag with trailing self-closing spaces and slash', () async {
+        final parser = LlmTagParser(
+          stream: streamTextInChunks('<interface checked   />'),
+          tags: [LlmTag(open: '<interface {attrs}>', close: '</interface>')],
+        );
+        final attrs = await parser.within('<interface {attrs}>').attributes;
+        expect(attrs.containsKey('checked'), isTrue);
+      });
+
+      test('D.5: Highly intense combination of boolean, unquoted, and slash elements', () async {
+        final parser = LlmTagParser(
+          stream: streamTextInChunks('<interface selected visible id=box active/>'),
+          tags: [LlmTag(open: '<interface {attrs}>', close: '</interface>')],
+        );
+        final attrs = await parser.within('<interface {attrs}>').attributes;
+        expect(attrs.containsKey('selected'), isTrue);
+        expect(attrs.containsKey('visible'), isTrue);
+        expect(attrs['id'], equals('box'));
+        expect(attrs.containsKey('active'), isTrue);
+      });
+    });
+
+    // CATEGORY E: Multi-Line, Whitespace, & Stream Boundary Variations
+    group('Category E: Multi-Line, Whitespace, & Stream Boundary Variations', () {
+      test('E.1: Spacing and tab variations around equal signs', () async {
+        final parser = LlmTagParser(
+          stream: streamTextInChunks('<interface id  \t  =  \t  "main"  type  =  \'panel\'>Content</interface>'),
+          tags: [LlmTag(open: '<interface {attrs}>', close: '</interface>')],
+        );
+        final attrs = await parser.within('<interface {attrs}>').attributes;
+        expect(attrs['id'], equals('main'));
+        expect(attrs['type'], equals('panel'));
+      });
+
+      test('E.2: Attributes spread across multiple lines with formatting whitespace', () async {
+        final parser = LlmTagParser(
+          stream: streamTextInChunks('<interface\n  id="main"\n  type="panel"\n  version="1"\n>Content</interface>'),
+          tags: [LlmTag(open: '<interface {attrs}>', close: '</interface>')],
+        );
+        final attrs = await parser.within('<interface {attrs}>').attributes;
+        expect(attrs['id'], equals('main'));
+        expect(attrs['type'], equals('panel'));
+        expect(attrs['version'], equals('1'));
+      });
+
+      test('E.3: Zero spacing between key-values', () async {
+        final parser = LlmTagParser(
+          stream: streamTextInChunks('<interface id="main"type="panel"class="dark">Content</interface>'),
+          tags: [LlmTag(open: '<interface {attrs}>', close: '</interface>')],
+        );
+        final attrs = await parser.within('<interface {attrs}>').attributes;
+        expect(attrs['id'], equals('main'));
+        expect(attrs['type'], equals('panel'));
+        expect(attrs['class'], equals('dark'));
+      });
+
+      test('E.4: Stream chunk boundaries cutting directly through equal sign', () async {
+        final chunks = ['<interface id', '="ma', 'in" ty', 'pe="pa', 'nel">Con', 'tent</interface>'];
+        final controller = StreamController<String>();
+        final parser = LlmTagParser(
+          stream: controller.stream,
+          tags: [LlmTag(open: '<interface {attrs}>', close: '</interface>')],
+        );
+        for (final chunk in chunks) {
+          controller.add(chunk);
+          await Future.delayed(const Duration(milliseconds: 5));
+        }
+        await controller.close();
+
+        final attrs = await parser.within('<interface {attrs}>').attributes;
+        expect(attrs['id'], equals('main'));
+        expect(attrs['type'], equals('panel'));
+      });
+
+      test('E.5: Intense chunk boundary split inside escaped quote value', () async {
+        final chunks = ['<interface escaped="he', 'llo \\"', 'wor', 'ld\\"" type="panel">', 'Content</interface>'];
+        final controller = StreamController<String>();
+        final parser = LlmTagParser(
+          stream: controller.stream,
+          tags: [LlmTag(open: '<interface {attrs}>', close: '</interface>')],
+        );
+        for (final chunk in chunks) {
+          controller.add(chunk);
+          await Future.delayed(const Duration(milliseconds: 5));
+        }
+        await controller.close();
+
+        final attrs = await parser.within('<interface {attrs}>').attributes;
+        expect(attrs['escaped'], equals('hello "world"'));
+        expect(attrs['type'], equals('panel'));
+      });
+    });
+  });
 }
+

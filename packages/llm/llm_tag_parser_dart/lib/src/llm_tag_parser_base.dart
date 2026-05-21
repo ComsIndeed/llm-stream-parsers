@@ -242,7 +242,7 @@ class LlmTagParser {
 
   void _processPendingBuffer({required bool isFinal}) {
     while (_pendingBuffer.isNotEmpty) {
-      final result = _findNextMatch(_pendingBuffer, 0);
+      final result = _findNextMatch(_pendingBuffer, 0, isFinal);
       if (result == null) {
         if (isFinal) {
           _emitText(_pendingBuffer);
@@ -324,7 +324,7 @@ class LlmTagParser {
     }
   }
 
-  _TagMatch? _findNextMatch(String buffer, int startIndex) {
+  _TagMatch? _findNextMatch(String buffer, int startIndex, bool isFinal) {
     _TagMatch? earliest;
 
     for (final tag in _tagDefinitions.values) {
@@ -339,7 +339,7 @@ class LlmTagParser {
       if (tag.hasAttributes) {
         final openIndex = buffer.indexOf(tag.openPrefix, startIndex);
         if (openIndex != -1) {
-          final suffixIndex = buffer.indexOf(tag.openSuffix, openIndex + tag.openPrefix.length);
+          final suffixIndex = _findSuffixIndex(buffer, tag.openSuffix, openIndex + tag.openPrefix.length, isFinal);
           if (suffixIndex == -1) {
             earliest = _pickEarlier(
               earliest,
@@ -466,24 +466,103 @@ class _TagDefinition {
     }
 
     final format = attributeFormat ?? AttributeFormat.xml;
-    final trimmed = rawAttributes.trim();
+    var trimmed = rawAttributes.trim();
     if (trimmed.isEmpty) {
       return const <String, String>{};
     }
 
+    if (placeholder != null && trimmed.startsWith(placeholder!)) {
+      trimmed = trimmed.substring(placeholder!.length).trim();
+    }
+
     if (format == AttributeFormat.keyOnly) {
+      if (trimmed.endsWith('/')) {
+        trimmed = trimmed.substring(0, trimmed.length - 1).trim();
+      }
       return {'value': trimmed};
     }
 
     final attributes = <String, String>{};
-    final doubleQuote = RegExp(r'(\w+)\s*=\s*"([^"]*)"');
-  final singleQuote = RegExp(r"(\w+)\s*=\s*'([^']*)'");
-    for (final match in doubleQuote.allMatches(trimmed)) {
-      attributes[match.group(1)!] = match.group(2) ?? '';
+    final len = trimmed.length;
+    var i = 0;
+
+    void skipWhitespace() {
+      while (i < len && (trimmed[i] == ' ' || trimmed[i] == '\t' || trimmed[i] == '\n' || trimmed[i] == '\r')) {
+        i++;
+      }
     }
-    for (final match in singleQuote.allMatches(trimmed)) {
-      attributes[match.group(1)!] = match.group(2) ?? '';
+
+    while (i < len) {
+      skipWhitespace();
+      if (i >= len) break;
+
+      if (trimmed[i] == '/') {
+        i++;
+        continue;
+      }
+
+      final keyStart = i;
+      while (i < len &&
+             trimmed[i] != '=' &&
+             trimmed[i] != '/' &&
+             trimmed[i] != ' ' &&
+             trimmed[i] != '\t' &&
+             trimmed[i] != '\n' &&
+             trimmed[i] != '\r') {
+        i++;
+      }
+      final key = trimmed.substring(keyStart, i).trim();
+      if (key.isEmpty) {
+        if (i < len) i++;
+        continue;
+      }
+
+      skipWhitespace();
+
+      if (i < len && trimmed[i] == '=') {
+        i++;
+        skipWhitespace();
+
+        if (i >= len) {
+          attributes[key] = '';
+          break;
+        }
+
+        final char = trimmed[i];
+        if (char == '"' || char == "'") {
+          final quoteChar = char;
+          i++;
+          final valBuffer = StringBuffer();
+          while (i < len) {
+            if (trimmed[i] == '\\' && i + 1 < len) {
+              valBuffer.write(trimmed[i + 1]);
+              i += 2;
+            } else if (trimmed[i] == quoteChar) {
+              i++;
+              break;
+            } else {
+              valBuffer.write(trimmed[i]);
+              i++;
+            }
+          }
+          attributes[key] = valBuffer.toString();
+        } else {
+          final valStart = i;
+          while (i < len &&
+                 trimmed[i] != '/' &&
+                 trimmed[i] != ' ' &&
+                 trimmed[i] != '\t' &&
+                 trimmed[i] != '\n' &&
+                 trimmed[i] != '\r') {
+            i++;
+          }
+          attributes[key] = trimmed.substring(valStart, i);
+        }
+      } else {
+        attributes[key] = 'true';
+      }
     }
+
     return attributes;
   }
 }
@@ -539,4 +618,50 @@ class _TagMatch {
   factory _TagMatch.incompleteOpen(_TagDefinition tag, int start) {
     return _TagMatch._(tag, start, start, true, true, null, false);
   }
+}
+
+int _findSuffixIndex(String buffer, String suffix, int startSearchFrom, bool isFinal) {
+  final len = buffer.length;
+  var i = startSearchFrom;
+
+  while (i < len) {
+    final char = buffer[i];
+    if (char == '\\' && i + 1 < len) {
+      i += 2;
+      continue;
+    }
+
+    if (char == '"' || char == "'") {
+      final quoteChar = char;
+      var closedQuoteFound = false;
+      var k = i + 1;
+      while (k < len) {
+        final c = buffer[k];
+        if (c == '\\' && k + 1 < len) {
+          k += 2;
+          continue;
+        }
+        if (c == quoteChar) {
+          closedQuoteFound = true;
+          break;
+        }
+        k++;
+      }
+
+      if (closedQuoteFound) {
+        i = k + 1;
+        continue;
+      } else {
+        if (!isFinal) {
+          return -1;
+        }
+      }
+    }
+
+    if (buffer.startsWith(suffix, i)) {
+      return i;
+    }
+    i++;
+  }
+  return -1;
 }
