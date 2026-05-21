@@ -1,0 +1,11 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "LLM Tag Parser Example",
+      "request": "launch",
+      "type": "dart",
+      "program": "packages/llm/llm_tag_parser_dart/example/lib/main.dart"
+    }
+  ]
+}
