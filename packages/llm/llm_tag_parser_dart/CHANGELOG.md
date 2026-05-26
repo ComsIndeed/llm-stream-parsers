@@ -1,3 +1,18 @@
+## 0.2.0
+
+- **Feature**: Unified Chronological Node Event Stream (`nodes`).
+  - Re-architected parser around a chronological stream of `LlmNode`s (`TextNode` and `TagNode`), preserving the exact timeline order of the response.
+- **Feature**: True Tag Instance Isolation.
+  - Every matched tag occurrence (e.g. parallel `<interface>` blocks) is represented as a distinct `TagNode` instance with its own completely isolated `stream` and `future`.
+  - Zero content bleeding, leakage, or multiplexing issues between identical sibling tag occurrences.
+- **Feature**: Dynamic Tag Instance Routing (`instances`).
+  - Exposed a `.instances` reactive stream on `LlmTagContent` to easily listen to and route specific tag occurrences as they open.
+- **Feature**: Stack-Based Nested Tag Routing.
+  - Uses an internal active instance stack to correctly route nested tags (like `<tool_use>` inside `<thinking>`), ensuring parent instances correctly contain their children's content.
+- **Feature**: Standard Replay Buffering.
+  - Re-implemented subscriber buffering utilizing Dart's standard `Stream.multi`, providing robust, native support for late and multiple subscribers.
+- **API Extension**: Added `.getAttributeStream(name)` and `.getAttributeFuture(name)` convenience methods.
+
 ## 0.1.2
 
 - **Feature**: Replaced regex attribute parser with an extremely robust

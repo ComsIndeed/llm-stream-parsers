@@ -583,6 +583,146 @@ void main() {
       final outside = await collectStream(parser.outside('<thinking>').stream);
       expect(outside.trim(), contains('Text after empty tag.'));
     });
+
+    group('Static History Restoration Chunks', () {
+      test('case 1: single chunk, conversational text only (no tags)', () async {
+        final text = 'Hello, this is just conversational text with no tags at all.';
+        final parser = LlmTagParser(
+          stream: Stream.value(text),
+          tags: [
+            LlmTag(
+              open: '<interface{attrs}>',
+              close: '</interface>',
+              attributePlaceholder: '{attrs}',
+            ),
+          ],
+        );
+        final inside = await collectStream(parser.within('<interface{attrs}>').stream);
+        final outside = await collectStream(parser.outside('<interface{attrs}>').stream);
+
+        expect(inside, isEmpty);
+        expect(outside.trim(), equals(text));
+      });
+
+      test('case 2: single chunk, preamble + interface tag (no after-amble)', () async {
+        final text = 'Here is your panel:\n<interface viewId="canvas">{"namespace": "core:panel"}</interface>';
+        final parser = LlmTagParser(
+          stream: Stream.value(text),
+          tags: [
+            LlmTag(
+              open: '<interface{attrs}>',
+              close: '</interface>',
+              attributePlaceholder: '{attrs}',
+            ),
+          ],
+        );
+        final inside = await collectStream(parser.within('<interface{attrs}>').stream);
+        final outside = await collectStream(parser.outside('<interface{attrs}>').stream);
+
+        expect(inside.trim(), equals('{"namespace": "core:panel"}'));
+        expect(outside.trim(), equals('Here is your panel:'));
+      });
+
+      test('case 3: single chunk, preamble + interface tag + after-amble', () async {
+        final text = 'Preamble text\n<interface viewId="canvas">{"namespace": "core:panel"}</interface>\nAfter-amble text';
+        final parser = LlmTagParser(
+          stream: Stream.value(text),
+          tags: [
+            LlmTag(
+              open: '<interface{attrs}>',
+              close: '</interface>',
+              attributePlaceholder: '{attrs}',
+            ),
+          ],
+        );
+        final inside = await collectStream(parser.within('<interface{attrs}>').stream);
+        final outside = await collectStream(parser.outside('<interface{attrs}>').stream);
+
+        expect(inside.trim(), equals('{"namespace": "core:panel"}'));
+        expect(outside.trim(), equals('Preamble text\n\nAfter-amble text'));
+      });
+
+      test('case 4: single chunk, multiple interface tags with text between and after', () async {
+        final text = 'Preamble\n<interface viewId="c1">W1</interface>\nBetween\n<interface viewId="c2">W2</interface>\nAfter';
+        final parser = LlmTagParser(
+          stream: Stream.value(text),
+          tags: [
+            LlmTag(
+              open: '<interface{attrs}>',
+              close: '</interface>',
+              attributePlaceholder: '{attrs}',
+            ),
+          ],
+        );
+        final inside = await collectStream(parser.within('<interface{attrs}>').stream);
+        final outside = await collectStream(parser.outside('<interface{attrs}>').stream);
+
+        expect(inside.trim(), contains('W1'));
+        expect(inside.trim(), contains('W2'));
+        expect(outside.trim(), equals('Preamble\n\nBetween\n\nAfter'));
+      });
+
+      test('case 5: single chunk, tag with attributes and multi-line formatting inside JSON', () async {
+        final text = '''
+Preamble
+<interface id="main" schema="v2">
+{
+  "namespace": "core:pricing_table",
+  "plan": "Premium"
+}
+</interface>
+After-amble''';
+        final parser = LlmTagParser(
+          stream: Stream.value(text),
+          tags: [
+            LlmTag(
+              open: '<interface{attrs}>',
+              close: '</interface>',
+              attributePlaceholder: '{attrs}',
+            ),
+          ],
+        );
+        final inside = await collectStream(parser.within('<interface{attrs}>').stream);
+        final outside = await collectStream(parser.outside('<interface{attrs}>').stream);
+        final attrs = await parser.within('<interface{attrs}>').attributes;
+
+        expect(attrs['id'], equals('main'));
+        expect(attrs['schema'], equals('v2'));
+        expect(inside.trim(), contains('"namespace": "core:pricing_table"'));
+        expect(outside.trim(), equals('Preamble\n\nAfter-amble'));
+      });
+
+      test('case 6: reproduce user after-amble missing with XML tag inside', () async {
+        final text = '''
+I understand! You would like me to provide a preamble and an after-amble before and after showing the weather information.
+
+Here is the weather for Manila with a preamble and after-amble:
+
+**Preamble:** I have fetched the current weather information for Manila for you.
+
+<interface>
+  <Weather city="Manila" />
+</interface>
+
+**After amble:** I hope this weather information is helpful for you!''';
+
+        final parser = LlmTagParser(
+          stream: Stream.value(text),
+          tags: [
+            LlmTag(
+              open: '<interface{attrs}>',
+              close: '</interface>',
+              attributePlaceholder: '{attrs}',
+            ),
+          ],
+        );
+        final inside = await collectStream(parser.within('<interface{attrs}>').stream);
+        final outside = await collectStream(parser.outside('<interface{attrs}>').stream);
+
+        expect(inside.trim(), contains('<Weather city="Manila" />'));
+        expect(outside.trim(), contains('After amble:'));
+      });
+    });
   });
 
   // ───────────────────────────────────────────

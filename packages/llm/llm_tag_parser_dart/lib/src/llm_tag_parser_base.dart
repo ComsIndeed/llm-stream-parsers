@@ -28,6 +28,89 @@ class LlmTag {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// V2 NODE TYPES
+// ─────────────────────────────────────────────────────────────────────────────
+
+abstract class LlmNode {
+  final Map<String, int> depths;
+  const LlmNode({required this.depths});
+}
+
+class TextNode extends LlmNode {
+  final String text;
+  const TextNode(this.text, {required super.depths});
+
+  @override
+  String toString() => 'TextNode("$text", depths: $depths)';
+}
+
+class _ActiveTagInstance {
+  final String openKey;
+  final StreamController<String> controller = StreamController.broadcast();
+  final List<String> chunks = [];
+  final Completer<String> completer = Completer<String>();
+  bool isClosed = false;
+
+  _ActiveTagInstance({required this.openKey});
+
+  void add(String chunk) {
+    if (isClosed) return;
+    chunks.add(chunk);
+    controller.add(chunk);
+  }
+
+  void close() {
+    if (isClosed) return;
+    isClosed = true;
+    controller.close();
+    completer.complete(chunks.join(''));
+  }
+}
+
+class TagNode extends LlmNode {
+  final String tag;
+  final Map<String, String> attributes;
+  final _ActiveTagInstance _activeInstance;
+
+  TagNode({
+    required this.tag,
+    required this.attributes,
+    required _ActiveTagInstance activeInstance,
+    required super.depths,
+  })  : _activeInstance = activeInstance;
+
+  Stream<String> get stream {
+    return Stream.multi((controller) {
+      for (final chunk in _activeInstance.chunks) {
+        controller.add(chunk);
+      }
+      if (_activeInstance.isClosed) {
+        controller.close();
+        return;
+      }
+      final sub = _activeInstance.controller.stream.listen(
+        controller.add,
+        onError: controller.addError,
+        onDone: controller.close,
+      );
+      controller.onCancel = sub.cancel;
+    });
+  }
+
+  Future<String> get future => _activeInstance.completer.future;
+
+  Future<String?> getAttributeFuture(String name) async => attributes[name];
+  Stream<String?> getAttributeStream(String name) => Stream.value(attributes[name]);
+
+  @override
+  String toString() => 'TagNode($tag, attributes: $attributes, depths: $depths)';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TAG CONTENT & PARSER
+// ─────────────────────────────────────────────────────────────────────────────
+
 class LlmTagContent {
   final LlmTagParser _parser;
   final Map<String, bool> _filters;
@@ -42,21 +125,12 @@ class LlmTagContent {
 
   Stream<String> get stream {
     return Stream.multi((controller) {
-      for (final event in _parser._textBuffer) {
-        if (_matchesDepth(event.depths) && event.text.isNotEmpty) {
-          controller.add(event.text);
-        }
-      }
-
-      if (_parser._isClosed) {
-        controller.close();
-        return;
-      }
-
-      final sub = _parser._textController.stream.listen(
-        (event) {
-          if (_matchesDepth(event.depths) && event.text.isNotEmpty) {
-            controller.add(event.text);
+      final sub = _parser.nodes.listen(
+        (node) {
+          if (node is TextNode && _matchesDepth(node.depths)) {
+            if (node.text.isNotEmpty) {
+              controller.add(node.text);
+            }
           }
         },
         onError: controller.addError,
@@ -80,34 +154,12 @@ class LlmTagContent {
       return const <String, String>{};
     }
 
-    for (final event in _parser._attributeBuffer) {
-      if (event.tag == attributeTag && _matchesDepth(event.depths)) {
-        return event.attributes;
+    await for (final node in _parser.nodes) {
+      if (node is TagNode && node.tag == attributeTag && _matchesDepth(node.depths)) {
+        return node.attributes;
       }
     }
-
-    if (_parser._isClosed) {
-      return const <String, String>{};
-    }
-
-    final completer = Completer<Map<String, String>>();
-    late StreamSubscription<_AttributeEvent> sub;
-    sub = _parser._attributeController.stream.listen(
-      (event) {
-        if (event.tag == attributeTag && _matchesDepth(event.depths)) {
-          completer.complete(event.attributes);
-          sub.cancel();
-        }
-      },
-      onError: completer.completeError,
-      onDone: () {
-        if (!completer.isCompleted) {
-          completer.complete(const <String, String>{});
-        }
-      },
-    );
-
-    return completer.future;
+    return const <String, String>{};
   }
 
   Stream<String?> attribute(String name) {
@@ -117,21 +169,39 @@ class LlmTagContent {
     }
 
     return Stream.multi((controller) {
-      for (final event in _parser._attributeBuffer) {
-        if (event.tag == attributeTag && _matchesDepth(event.depths)) {
-          controller.add(event.attributes[name]);
-        }
-      }
+      final sub = _parser.nodes.listen(
+        (node) {
+          if (node is TagNode && node.tag == attributeTag && _matchesDepth(node.depths)) {
+            controller.add(node.attributes[name]);
+          }
+        },
+        onError: controller.addError,
+        onDone: controller.close,
+      );
+      controller.onCancel = sub.cancel;
+    });
+  }
 
-      if (_parser._isClosed) {
-        controller.close();
-        return;
-      }
+  Stream<String?> getAttributeStream(String name) {
+    return attribute(name);
+  }
 
-      final sub = _parser._attributeController.stream.listen(
-        (event) {
-          if (event.tag == attributeTag && _matchesDepth(event.depths)) {
-            controller.add(event.attributes[name]);
+  Future<String?> getAttributeFuture(String name) async {
+    final attrs = await attributes;
+    return attrs[name];
+  }
+
+  Stream<TagNode> get instances {
+    final attributeTag = _attributeTag;
+    if (attributeTag == null) {
+      return const Stream<TagNode>.empty();
+    }
+
+    return Stream.multi((controller) {
+      final sub = _parser.nodes.listen(
+        (node) {
+          if (node is TagNode && node.tag == attributeTag && _matchesDepth(node.depths)) {
+            controller.add(node);
           }
         },
         onError: controller.addError,
@@ -175,10 +245,9 @@ class LlmTagContent {
 class LlmTagParser {
   final Map<String, _TagDefinition> _tagDefinitions;
   final Map<String, int> _depths = {};
-  final List<_TextEvent> _textBuffer = [];
-  final List<_AttributeEvent> _attributeBuffer = [];
-  final StreamController<_TextEvent> _textController = StreamController.broadcast();
-  final StreamController<_AttributeEvent> _attributeController = StreamController.broadcast();
+  final List<LlmNode> _nodeHistory = [];
+  final StreamController<LlmNode> _nodesController = StreamController.broadcast();
+  final List<_ActiveTagInstance> _activeInstances = [];
   final int _maxDelimiterLength;
   late final Set<String> _delimiters;
   bool _isClosed = false;
@@ -197,14 +266,41 @@ class LlmTagParser {
 
     stream.listen(
       _handleChunk,
-      onError: _textController.addError,
+      onError: (err, stack) {
+        _nodesController.addError(err, stack);
+      },
       onDone: () {
         _processPendingBuffer(isFinal: true);
+        _closeAllActiveInstances();
         _isClosed = true;
-        _textController.close();
-        _attributeController.close();
+        _nodesController.close();
       },
     );
+  }
+
+  void _closeAllActiveInstances() {
+    for (final instance in _activeInstances) {
+      instance.close();
+    }
+    _activeInstances.clear();
+  }
+
+  Stream<LlmNode> get nodes {
+    return Stream.multi((controller) {
+      for (final node in _nodeHistory) {
+        controller.add(node);
+      }
+      if (_isClosed) {
+        controller.close();
+        return;
+      }
+      final sub = _nodesController.stream.listen(
+        controller.add,
+        onError: controller.addError,
+        onDone: controller.close,
+      );
+      controller.onCancel = sub.cancel;
+    });
   }
 
   Set<String> _computeDelimiters() {
@@ -290,24 +386,40 @@ class LlmTagParser {
     if (text.isEmpty) {
       return;
     }
-    final event = _TextEvent(text, Map.unmodifiable({..._depths}));
-    _textBuffer.add(event);
-    _textController.add(event);
+    final node = TextNode(text, depths: Map.unmodifiable({..._depths}));
+    _nodeHistory.add(node);
+    _nodesController.add(node);
+
+    for (final active in _activeInstances) {
+      active.add(text);
+    }
   }
 
   void _handleOpen(_TagMatch match) {
     final tag = match.tag;
     _depths[tag.openKey] = (_depths[tag.openKey] ?? 0) + 1;
-    if (tag.hasAttributes) {
-      final attributes = tag.parseAttributes(match.attributeText ?? '');
-      final event = _AttributeEvent(
-        tag.openKey,
-        attributes,
-        Map.unmodifiable({..._depths}),
-      );
-      _attributeBuffer.add(event);
-      _attributeController.add(event);
+
+    final attributes = tag.hasAttributes
+        ? tag.parseAttributes(match.attributeText ?? '')
+        : const <String, String>{};
+
+    final activeInstance = _ActiveTagInstance(openKey: tag.openKey);
+
+    if (match.isSelfClosing) {
+      activeInstance.close();
+    } else {
+      _activeInstances.add(activeInstance);
     }
+
+    final node = TagNode(
+      tag: tag.openKey,
+      attributes: Map.unmodifiable(attributes),
+      activeInstance: activeInstance,
+      depths: Map.unmodifiable({..._depths}),
+    );
+    _nodeHistory.add(node);
+    _nodesController.add(node);
+
     if (match.isSelfClosing) {
       final current = _depths[tag.openKey] ?? 0;
       if (current > 0) {
@@ -321,6 +433,14 @@ class LlmTagParser {
     final current = _depths[tag.openKey] ?? 0;
     if (current > 0) {
       _depths[tag.openKey] = current - 1;
+    }
+
+    for (var i = _activeInstances.length - 1; i >= 0; i--) {
+      if (_activeInstances[i].openKey == tag.openKey) {
+        _activeInstances[i].close();
+        _activeInstances.removeAt(i);
+        break;
+      }
     }
   }
 
@@ -565,21 +685,6 @@ class _TagDefinition {
 
     return attributes;
   }
-}
-
-class _TextEvent {
-  final String text;
-  final Map<String, int> depths;
-
-  _TextEvent(this.text, this.depths);
-}
-
-class _AttributeEvent {
-  final String tag;
-  final Map<String, String> attributes;
-  final Map<String, int> depths;
-
-  _AttributeEvent(this.tag, this.attributes, this.depths);
 }
 
 class _TagMatch {
