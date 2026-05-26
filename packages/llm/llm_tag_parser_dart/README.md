@@ -28,6 +28,8 @@ for the complete response.
   - [Streaming Outer Content](#streaming-outer-content)
   - [Hierarchical Nesting](#hierarchical-nesting)
   - [Attribute Extraction](#attribute-extraction)
+  - [Parallel Tag Instances](#parallel-tag-instances)
+  - [Chronological Node Stream](#chronological-node-stream)
   - [Custom Delimiters](#custom-delimiters)
   - [Robust Stream Buffering](#robust-stream-buffering)
 - [Complete Example](#complete-example)
@@ -71,7 +73,7 @@ Instead of waiting for the entire response to finish, you can:
 ```yaml
 # pubspec.yaml
 dependencies:
-  llm_tag_parser: ^0.1.2
+  llm_tag_parser: ^0.2.0
 ```
 
 ```dart
@@ -172,7 +174,60 @@ print('ID: ${attrs['id']}');
 parser.within('<interface {attrs}>').attribute('id').listen((idValue) {
   print('ID updated: $idValue');
 });
+
+// Convenience helpers (equivalent to the above)
+final id = await parser.within('<interface {attrs}>').getAttributeFuture('id');
+parser.within('<interface {attrs}>').getAttributeStream('id').listen(print);
 ```
+
+### Parallel Tag Instances
+
+When a response contains multiple occurrences of the same tag (e.g. several
+parallel `<tool_use>` blocks), each occurrence is a fully isolated `TagNode`
+with its own independent `stream` and `future`. Use `.instances` to route each
+one as it opens:
+
+```dart
+parser.within('<tool_use>').instances.listen((tagNode) {
+  // tagNode is a distinct TagNode for this specific occurrence
+  tagNode.stream.listen((chunk) {
+    print('Tool chunk: $chunk');
+  });
+
+  tagNode.future.then((full) {
+    print('Tool complete: $full');
+  });
+
+  // Access parsed attributes directly on the TagNode
+  print('Tool name: ${tagNode.attributes['name']}');
+  tagNode.getAttributeFuture('name').then(print);
+});
+```
+
+### Chronological Node Stream
+
+The parser exposes a unified, chronological `nodes` stream of `LlmNode`
+objects, preserving the exact timeline order of the response. This is the
+low-level primitive that backs all higher-level APIs:
+
+```dart
+parser.nodes.listen((node) {
+  if (node is TextNode) {
+    print('Text at depths ${node.depths}: ${node.text}');
+  } else if (node is TagNode) {
+    print('Tag opened: ${node.tag}, attributes: ${node.attributes}');
+    node.stream.listen((chunk) => print('  chunk: $chunk'));
+  }
+});
+```
+
+| Node Type  | Description                                                         |
+| ---------- | ------------------------------------------------------------------- |
+| `TextNode` | A chunk of plain text, tagged with current nesting `depths`         |
+| `TagNode`  | A tag opening event, carrying `attributes`, `stream`, and `future`  |
+
+Both node types carry a `depths` map (`Map<String, int>`) indicating how deep
+inside each registered tag the content was emitted at.
 
 ### Custom Delimiters
 
@@ -242,6 +297,12 @@ void main() async {
   parser.outside('<thinking>').outside('<interface {attrs}>').stream.listen((chunk) {
     print('Chat chunk: $chunk');
   });
+
+  // Handle multiple parallel tool_use blocks via instances
+  parser.within('<tool_use>').instances.listen((tagNode) {
+    print('Tool opened: ${tagNode.attributes['name']}');
+    tagNode.future.then((result) => print('Tool result: $result'));
+  });
 }
 ```
 
@@ -249,22 +310,50 @@ void main() async {
 
 ## API Reference
 
-### LlmTagParser Methods
+### LlmTagParser
 
-| Method          | Returns         | Description                                                   |
-| --------------- | --------------- | ------------------------------------------------------------- |
-| `.within(tag)`  | `LlmTagContent` | Isolate the inner content of a tag.                           |
-| `.outside(tag)` | `LlmTagContent` | Isolate the outer content (conversational text) around a tag. |
+| Member          | Type                  | Description                                                   |
+| --------------- | --------------------- | ------------------------------------------------------------- |
+| `.within(tag)`  | `LlmTagContent`       | Isolate the inner content of a tag.                           |
+| `.outside(tag)` | `LlmTagContent`       | Isolate the outer content (conversational text) around a tag. |
+| `.nodes`        | `Stream<LlmNode>`     | Unified chronological stream of all `TextNode`s and `TagNode`s. |
 
-### LlmTagContent Interface
+### LlmTagContent
 
 ```dart
-.stream      // Stream<String> - buffered, replays past chunks to late subscribers
-.future      // Future<String> - resolves with the complete accumulated text
-.attributes  // Future<Map<String, String>> - resolves with parsed attributes map
-.attribute(name) // Stream<String?> - streams the individual attribute value
-.within(tag)   // LlmTagContent - chains nested tag lookups
-.outside(tag)  // LlmTagContent - chains nested sibling filters
+.stream                    // Stream<String>       — buffered, replays past chunks to late subscribers
+.future                    // Future<String>       — resolves with the complete accumulated text
+.attributes                // Future<Map<String, String>> — resolves with parsed attributes map
+.attribute(name)           // Stream<String?>      — streams the individual attribute value
+.getAttributeStream(name)  // Stream<String?>      — convenience alias for .attribute(name)
+.getAttributeFuture(name)  // Future<String?>      — convenience alias for awaiting .attributes[name]
+.instances                 // Stream<TagNode>      — emits a TagNode for each new tag occurrence
+.within(tag)               // LlmTagContent        — chains nested tag lookups
+.outside(tag)              // LlmTagContent        — chains nested sibling filters
+```
+
+### LlmNode Types
+
+```dart
+// Base class
+abstract class LlmNode {
+  final Map<String, int> depths; // nesting depth per registered tag
+}
+
+// Plain text emitted between (or inside) tags
+class TextNode extends LlmNode {
+  final String text;
+}
+
+// A tag opening event
+class TagNode extends LlmNode {
+  final String tag;
+  final Map<String, String> attributes;
+  Stream<String> get stream;                        // content stream for this instance
+  Future<String> get future;                        // complete content future
+  Future<String?> getAttributeFuture(String name);  // attribute by name (future)
+  Stream<String?> getAttributeStream(String name);  // attribute by name (stream)
+}
 ```
 
 ---
@@ -278,6 +367,7 @@ Battle-tested resilience handling the realities of streaming LLM outputs:
 | **Backtracking**         | False alarm tag beginnings (like `x < thinking`) are gracefully returned to conversational text instead of being swallowed.                                                 |
 | **Ambiguity**            | Handles overlapping tag prefixes (like `<think>` and `<thinking>`) using longest-match win resolution.                                                                      |
 | **Self-Closing Tags**    | Automatically recognizes `<tag />` forms, closing the content stream immediately and extracting attributes.                                                                 |
+| **Instance Isolation**   | Each tag occurrence (e.g. parallel `<tool_use>` blocks) is a fully isolated `TagNode` — zero content bleeding between sibling instances.                                   |
 | **Attribute Keys**       | Full support for namespaces, hyphens, periods, and numbers in keys (e.g., `data-id`, `xml:lang`, `ns:a.b-c_d`).                                                             |
 | **Unquoted Values**      | Handles forgiving unquoted value assignments gracefully (e.g., `id=main`).                                                                                                  |
 | **Escaped Quotes**       | Parses escaped quotation characters (e.g., `\"`, `\'`) inside values without data truncation.                                                                               |

@@ -1,3 +1,13 @@
+## 0.2.1
+
+- **Docs**: Updated README to document the 0.2.0 API surface.
+  - Added `Parallel Tag Instances` section covering `.instances` and `TagNode` routing.
+  - Added `Chronological Node Stream` section covering the low-level `nodes` stream and `TextNode`/`TagNode` types.
+  - Expanded `Attribute Extraction` section with `.getAttributeStream()` and `.getAttributeFuture()` convenience helpers.
+  - Expanded `API Reference` with full `LlmTagParser.nodes`, `LlmTagContent`, and `LlmNode` type tables.
+  - Added `Instance Isolation` row to the Robustness table.
+  - Updated Quick Start version pin to `^0.2.0`.
+
 ## 0.2.0
 
 - **Feature**: Unified Chronological Node Event Stream (`nodes`).
