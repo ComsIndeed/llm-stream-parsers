@@ -1,6 +1,6 @@
 name: llm_tag_parser
 description: A robust, reactive streaming tag parser for LLM streams that isolates thought, code, or custom blocks chunk-by-chunk in real-time.
-version: 0.2.2
+version: 0.2.1
 repository: https://github.com/ComsIndeed/llm-stream-parsers/tree/main/packages/llm/llm_tag_parser_dart
 
 environment:

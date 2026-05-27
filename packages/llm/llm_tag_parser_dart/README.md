@@ -73,7 +73,7 @@ Instead of waiting for the entire response to finish, you can:
 ```yaml
 # pubspec.yaml
 dependencies:
-  llm_tag_parser: ^0.2.0
+  llm_tag_parser: ^0.2.1
 ```
 
 ```dart
@@ -206,9 +206,9 @@ parser.within('<tool_use>').instances.listen((tagNode) {
 
 ### Chronological Node Stream
 
-The parser exposes a unified, chronological `nodes` stream of `LlmNode`
-objects, preserving the exact timeline order of the response. This is the
-low-level primitive that backs all higher-level APIs:
+The parser exposes a unified, chronological `nodes` stream of `LlmNode` objects,
+preserving the exact timeline order of the response. This is the low-level
+primitive that backs all higher-level APIs:
 
 ```dart
 parser.nodes.listen((node) {
@@ -221,10 +221,10 @@ parser.nodes.listen((node) {
 });
 ```
 
-| Node Type  | Description                                                         |
-| ---------- | ------------------------------------------------------------------- |
-| `TextNode` | A chunk of plain text, tagged with current nesting `depths`         |
-| `TagNode`  | A tag opening event, carrying `attributes`, `stream`, and `future`  |
+| Node Type  | Description                                                        |
+| ---------- | ------------------------------------------------------------------ |
+| `TextNode` | A chunk of plain text, tagged with current nesting `depths`        |
+| `TagNode`  | A tag opening event, carrying `attributes`, `stream`, and `future` |
 
 Both node types carry a `depths` map (`Map<String, int>`) indicating how deep
 inside each registered tag the content was emitted at.
@@ -312,11 +312,11 @@ void main() async {
 
 ### LlmTagParser
 
-| Member          | Type                  | Description                                                   |
-| --------------- | --------------------- | ------------------------------------------------------------- |
-| `.within(tag)`  | `LlmTagContent`       | Isolate the inner content of a tag.                           |
-| `.outside(tag)` | `LlmTagContent`       | Isolate the outer content (conversational text) around a tag. |
-| `.nodes`        | `Stream<LlmNode>`     | Unified chronological stream of all `TextNode`s and `TagNode`s. |
+| Member          | Type              | Description                                                     |
+| --------------- | ----------------- | --------------------------------------------------------------- |
+| `.within(tag)`  | `LlmTagContent`   | Isolate the inner content of a tag.                             |
+| `.outside(tag)` | `LlmTagContent`   | Isolate the outer content (conversational text) around a tag.   |
+| `.nodes`        | `Stream<LlmNode>` | Unified chronological stream of all `TextNode`s and `TagNode`s. |
 
 ### LlmTagContent
 
@@ -367,7 +367,7 @@ Battle-tested resilience handling the realities of streaming LLM outputs:
 | **Backtracking**         | False alarm tag beginnings (like `x < thinking`) are gracefully returned to conversational text instead of being swallowed.                                                 |
 | **Ambiguity**            | Handles overlapping tag prefixes (like `<think>` and `<thinking>`) using longest-match win resolution.                                                                      |
 | **Self-Closing Tags**    | Automatically recognizes `<tag />` forms, closing the content stream immediately and extracting attributes.                                                                 |
-| **Instance Isolation**   | Each tag occurrence (e.g. parallel `<tool_use>` blocks) is a fully isolated `TagNode` — zero content bleeding between sibling instances.                                   |
+| **Instance Isolation**   | Each tag occurrence (e.g. parallel `<tool_use>` blocks) is a fully isolated `TagNode` — zero content bleeding between sibling instances.                                    |
 | **Attribute Keys**       | Full support for namespaces, hyphens, periods, and numbers in keys (e.g., `data-id`, `xml:lang`, `ns:a.b-c_d`).                                                             |
 | **Unquoted Values**      | Handles forgiving unquoted value assignments gracefully (e.g., `id=main`).                                                                                                  |
 | **Escaped Quotes**       | Parses escaped quotation characters (e.g., `\"`, `\'`) inside values without data truncation.                                                                               |
@@ -441,10 +441,16 @@ final parser = LlmTagParser(
 
 ### XML Tag Utilities (`XmlTagUtilities`)
 
-When parsing structured blocks that utilize standard XML/HTML format (including dot-notation, namespaces, and self-closing tags), you can cleanly extract the tag names or query properties:
+When parsing structured blocks that utilize standard XML/HTML format (including
+dot-notation, namespaces, and self-closing tags), you can cleanly extract the
+tag names or query properties:
 
-* **`XmlTagUtilities.getTagName(String openKey)`**: A static helper that parses an XML-like tag definition (e.g., `<Material.Card {attrs}>` or `<ui:button>`) and extracts the pure tag name (`Material.Card` or `ui:button`). Returns `null` if the tag definition does not follow the `<...>` XML format.
-* **`TagNode.tagName`**: A convenient getter on `TagNode` that returns the clean tag name (using `XmlTagUtilities.getTagName`) directly during streaming.
+- **`XmlTagUtilities.getTagName(String openKey)`**: A static helper that parses
+  an XML-like tag definition (e.g., `<Material.Card {attrs}>` or `<ui:button>`)
+  and extracts the pure tag name (`Material.Card` or `ui:button`). Returns
+  `null` if the tag definition does not follow the `<...>` XML format.
+- **`TagNode.tagName`**: A convenient getter on `TagNode` that returns the clean
+  tag name (using `XmlTagUtilities.getTagName`) directly during streaming.
 
 ```dart
 final parser = LlmTagParser(
