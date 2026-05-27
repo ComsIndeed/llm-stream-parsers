@@ -437,6 +437,28 @@ final parser = LlmTagParser(
 
 ---
 
+## Utilities
+
+### XML Tag Utilities (`XmlTagUtilities`)
+
+When parsing structured blocks that utilize standard XML/HTML format (including dot-notation, namespaces, and self-closing tags), you can cleanly extract the tag names or query properties:
+
+* **`XmlTagUtilities.getTagName(String openKey)`**: A static helper that parses an XML-like tag definition (e.g., `<Material.Card {attrs}>` or `<ui:button>`) and extracts the pure tag name (`Material.Card` or `ui:button`). Returns `null` if the tag definition does not follow the `<...>` XML format.
+* **`TagNode.tagName`**: A convenient getter on `TagNode` that returns the clean tag name (using `XmlTagUtilities.getTagName`) directly during streaming.
+
+```dart
+final parser = LlmTagParser(
+  stream: stream,
+  tags: [LlmTag(open: '<Material.Card {attrs}>', close: '</Material.Card>')],
+);
+
+parser.within('<Material.Card {attrs}>').instances.listen((instance) {
+  print(instance.tagName); // Prints: "Material.Card"
+});
+```
+
+---
+
 ## Contributing
 
 Contributions welcome!

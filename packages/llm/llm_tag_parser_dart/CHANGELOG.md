@@ -1,3 +1,8 @@
+## 0.2.2
+
+- **Feature**: Added `XmlTagUtilities` class and `TagNode.tagName` getter to cleanly parse tag names (e.g. `Material.Card` or `ui:button`) from XML-like tag definitions.
+- **Robustness**: Added 20+ comprehensive stress tests validating escape characters, backtrack boundary splits, and dot-notation namespace formatting.
+
 ## 0.2.1
 
 - **Docs**: Updated README to document the 0.2.0 API surface.

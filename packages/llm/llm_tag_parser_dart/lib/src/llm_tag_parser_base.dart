@@ -103,6 +103,8 @@ class TagNode extends LlmNode {
   Future<String?> getAttributeFuture(String name) async => attributes[name];
   Stream<String?> getAttributeStream(String name) => Stream.value(attributes[name]);
 
+  String? get tagName => XmlTagUtilities.getTagName(tag);
+
   @override
   String toString() => 'TagNode($tag, attributes: $attributes, depths: $depths)';
 }
@@ -769,4 +771,25 @@ int _findSuffixIndex(String buffer, String suffix, int startSearchFrom, bool isF
     i++;
   }
   return -1;
+}
+
+class XmlTagUtilities {
+  static String? getTagName(String openKey) {
+    var name = openKey.trim();
+    if (!name.startsWith('<') || !name.endsWith('>')) {
+      return null;
+    }
+    name = name.substring(1, name.length - 1).trim();
+    
+    var endIdx = name.length;
+    for (var i = 0; i < name.length; i++) {
+      final c = name[i];
+      if (c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '|' || c == '{' || c == '/') {
+        endIdx = i;
+        break;
+      }
+    }
+    name = name.substring(0, endIdx).trim();
+    return name.isEmpty ? null : name;
+  }
 }
